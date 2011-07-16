@@ -21,7 +21,6 @@ uses
   Windows,
   SysUtils,
   Classes,
-  ExceptionJCLSupport,
   comm_info in 'comm_info.pas',
   comm_plugin in 'comm_plugin.pas',
   comm_data in 'comm_data.pas',

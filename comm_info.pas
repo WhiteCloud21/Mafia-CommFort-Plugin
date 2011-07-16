@@ -876,11 +876,6 @@ begin
       Exit;
     end;
   end;
-  {AssignFile(F, 'test.dat');
-  Rewrite(F);
-  for I := 0 to iSize do
-    Write(F, Buf[I]);
-  Close(F);}
   CopyMemory(@Result, @Buf[0], 4);
   I:=4;
   setLength(ChannelList, Result + 1);

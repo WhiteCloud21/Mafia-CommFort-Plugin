@@ -342,13 +342,13 @@ implementation
   procedure onMsg(User: TUser; Channel, Text: String);
   var
     member: MafUser;
-    i,k,j: LongInt;
+    i,k,j: Integer;
     StrList: TStringList;
     Str: String;
     Ini : TIniFile;
 
     Sections: TStrings;
-    Points: LongInt;
+    Points: Integer;
     Wins, Plays, Draws : Word;
     Rate: Single;
     StopLoop: Boolean;

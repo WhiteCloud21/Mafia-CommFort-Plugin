@@ -30,11 +30,11 @@ implementation
     UsersCount: Integer;
     TopPointsCopy : array [1..TopMaxPlayers] of record
       Name: String;
-      Points: LongInt;
+      Points: Integer;
     end;
     TopRoleCopy : array [1..255] of record
       Name: String;
-      Plays: LongInt;
+      Plays: Integer;
     end;
 
   procedure SortStats_QuickSort(l, r: Integer);
@@ -69,7 +69,7 @@ implementation
     Ini : TIniFile;
     Sections: TStringList;
     I, K, J: Integer;
-    Wins, Plays, Draws, Points: LongInt;
+    Wins, Plays, Draws, Points: Integer;
     StopLoop:Boolean;
   begin
     Ini := TIniFile.Create(file_users);

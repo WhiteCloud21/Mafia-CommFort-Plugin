@@ -18,7 +18,7 @@ type
     compID: String;
     pol: integer;
     plays : Word;
-    points : LongInt;
+    points : Integer;
     wins : Word;
     draws : Word;
     rate : String;
@@ -334,7 +334,7 @@ var
 
   TopPoints : array [1..TopMaxPlayers] of record
     Name: String;
-    Points: LongInt;
+    Points: Integer;
   end;
   TopRate : array [1..TopMaxPlayers] of record
     Name: String;
@@ -342,7 +342,7 @@ var
   end;
   TopRole : array [1..255] of record
     Name: String;
-    Plays: LongInt;
+    Plays: Integer;
   end;
 
   NightPlaces: array [0..2] of String;
