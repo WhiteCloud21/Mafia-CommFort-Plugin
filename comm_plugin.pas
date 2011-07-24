@@ -185,6 +185,11 @@ var
   Str:String;
 begin
   if User.Name=BOT_NAME then exit;
+  if bMessage='test' then
+  begin
+     CorePlugin.AddImageToChannel(BOT_NAME, 'main', 'test.jpg');
+     CorePlugin.AddPrivateImage(BOT_NAME, User.Name, 'test.jpg');
+  end;
   try
     Str:='----onMsg Exception----'+Chr(13)+Chr(10)+'State='+IntToStr(State);
     Mafia.OnMsg(User, Channel, bMessage);

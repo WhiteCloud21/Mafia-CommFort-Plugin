@@ -2,7 +2,7 @@ unit comm_info;
 
 interface
 
-uses Windows, Classes, Sysutils, comm_data, libqueue;
+uses Windows, Classes, Sysutils, comm_data, libqueue, Graphics, JPEG;
 
 type
 
@@ -20,6 +20,8 @@ type
       FonUserJoinChannel: TUsrJoin;
       FonPubMsg       : TPubMsg;
       FonConStChg     : TonConStChg;
+
+      function FixImage(channel: string; var img: TJpegImage): Boolean;
     public
       constructor Create(dwThisPluginID : DWORD; func1 : TtypeCommFortProcess; func2: TtypeCommFortGetData);
       destructor Destroy; override;
@@ -32,6 +34,10 @@ type
       procedure AddMessageToChannel(Name, channel : string; regime : DWord; text : string);
       procedure AddPrivateMessage(Name: String; regime : DWord; User : string; text : string);
       procedure AddPersonalMessage(Name: String; Importance: DWord; User, Text : string);
+      procedure AddImageToChannel(Name, channel : string; image : TJpegImage); overload;
+      procedure AddImageToChannel(Name, channel : string; filename : String); overload;
+      procedure AddPrivateImage(Name, User : string; image : TJpegImage); overload;
+      procedure AddPrivateImage(Name, User : string; filename : String); overload;
       procedure AddTheme(Name:String; channel : string; newtheme : string);
       procedure AddGreeting(Name:String; channel : string; Text : string);
       procedure AddState(Name, newstate : string);
@@ -46,6 +52,7 @@ type
       function AskProgramType():DWord;
       function AskProgramVersion():String;
       function AskPluginTempPath():String;
+      procedure AskMaxImageSize(channel: String; var ByteSize: DWord; var PixelSize: DWord);
       function AskUserChannels(Name: String; var ChannelList: TChannels):DWord;
       function AskUsersInChannel(Name, Channel: String; var UserList: TUsers):DWord;
       function AskRestrictions(var RestList: TRestrictions):DWord;
@@ -75,6 +82,8 @@ type
       constructor Create(dwThisPluginID : DWORD; func1 : TtypeCommFortProcess; func2: TtypeCommFortGetData);
       destructor Destroy; override;
   end;
+
+  function GetJPEGFromFile(filename: string) : TJPEGImage;
 
 var
   PCorePlugin: PCommPluginC;
@@ -438,6 +447,69 @@ begin
   end;
 end;
 
+procedure TCommPluginC.AddImageToChannel(Name, channel : string; image : TJpegImage);
+var
+  msg: TMemoryStream;
+  stream: TMemoryStream;
+  len: Integer;
+begin
+  case PROG_TYPE of
+    0:
+      begin
+        msg := TMemoryStream.Create;
+        len:=Length(Name);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(Name[1], len*2);
+        len:=Length(Channel);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(Channel[1], len*2);
+        stream:=TMemoryStream.Create;
+        image.SaveToStream(stream);
+        len:=stream.Size;
+        msg.WriteBuffer(len, 4);
+        image.SaveToStream(msg);
+        stream.Free;
+        MsgQueue.InsertMsg(PM_PLUGIN_SNDIMG_PUB, msg);
+      end;
+    1:
+      begin
+        msg := TMemoryStream.Create;
+        len:=Length(Channel);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(Channel[1], len*2);
+        // JPG
+        len:=1;
+        msg.WriteBuffer(len, 4);
+        stream:=TMemoryStream.Create;
+        image.SaveToStream(stream);
+        len:=stream.Size;
+        msg.WriteBuffer(len, 4);
+        image.SaveToStream(msg);
+        stream.Free;
+        MsgQueue.InsertMsg(PM_CLIENT_SNDIMG_PUB, msg);
+      end;
+  end;
+end;
+
+procedure TCommPluginC.AddImageToChannel(Name, channel : string; filename : String);
+var
+  img: TJpegImage;
+begin
+	img := nil;
+	try
+  	try
+  		img := GetJPEGFromFile(filename);
+      if FixImage(channel, img) then
+  			AddImageToChannel(Name, channel, img);
+  	except
+    	on e: Exception do
+      	onError(self, e, ' File: '+filename+Chr(13)+Chr(10));
+  	end;
+  finally
+    img.Free;
+  end;
+end;
+
 procedure TCommPluginC.AddPrivateMessage(Name: String; regime : DWord; user : string; text : string);
 var
   msg: TBytes;
@@ -482,6 +554,69 @@ begin
         //CommfortProcess(dwPluginID, PM_CLIENT_SNDMSG_PRIV, @msg[0], i);
         MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PRIV, msg, i);
       end;
+  end;
+end;
+
+procedure TCommPluginC.AddPrivateImage(Name, User : string; image : TJpegImage);
+var
+  msg: TMemoryStream;
+  stream: TMemoryStream;
+  len: Integer;
+begin
+  case PROG_TYPE of
+    0:
+      begin
+        msg := TMemoryStream.Create;
+        len:=Length(Name);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(Name[1], len*2);
+        len:=Length(User);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(User[1], len*2);
+        stream:=TMemoryStream.Create;
+        image.SaveToStream(stream);
+        len:=stream.Size;
+        msg.WriteBuffer(len, 4);
+        image.SaveToStream(msg);
+        stream.Free;
+        MsgQueue.InsertMsg(PM_PLUGIN_SNDIMG_PRIV, msg);
+      end;
+    1:
+      begin
+        msg := TMemoryStream.Create;
+        len:=Length(User);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(User[1], len*2);
+        // JPG
+        len:=1;
+        msg.WriteBuffer(len, 4);
+        stream:=TMemoryStream.Create;
+        image.SaveToStream(stream);
+        len:=stream.Size;
+        msg.WriteBuffer(len, 4);
+        image.SaveToStream(msg);
+        stream.Free;
+        MsgQueue.InsertMsg(PM_CLIENT_SNDIMG_PRIV, msg);
+      end;
+  end;
+end;
+
+procedure TCommPluginC.AddPrivateImage(Name, User : string; filename : String);
+var
+  img: TJpegImage;
+begin
+	img := nil;
+	try
+  	try
+  		img := GetJPEGFromFile(filename);
+      if FixImage('&priv', img) then
+  			AddPrivateImage(Name, User, img);
+  	except
+    	on e: Exception do
+      	onError(self, e, ' File: '+filename+Chr(13)+Chr(10));
+  	end;
+  finally
+    img.Free;
   end;
 end;
 
@@ -843,6 +978,27 @@ begin
   Result:=TEncoding.Unicode.GetString(Buf, 4, iSize*2);
 end;
 
+procedure TCommPluginC.AskMaxImageSize(channel: String; var ByteSize: DWord; var PixelSize: DWord);
+var
+  outmsg: TMemoryStream;
+  inmsg: TMemoryStream;
+  iSize: DWord;
+begin
+  outmsg := TMemoryStream.Create;
+  iSize := Length(channel);
+  outmsg.WriteBuffer(iSize, 4);
+  outmsg.WriteBuffer(channel[1], iSize * 2);
+  outmsg.Seek(0, soBeginning);
+  iSize := CommFortGetData(dwPluginID, GD_MAXIMAGESIZE, nil, 0, outmsg.Memory, outmsg.Size);
+  inmsg := TMemoryStream.Create;
+  inmsg.SetSize(iSize);
+  iSize := CommFortGetData(dwPluginID, GD_MAXIMAGESIZE, inmsg.Memory, inmsg.Size, outmsg.Memory, outmsg.Size);
+  inmsg.ReadBuffer(ByteSize, 4);
+  inmsg.ReadBuffer(PixelSize, 4);
+  outmsg.Free;
+  inmsg.Free;
+end;
+
 function TCommPluginC.AskUserChannels(Name: String; var ChannelList: TChannels):DWord;
 var
   Buf, msg: TBytes;
@@ -1106,6 +1262,58 @@ begin
   SetLength(Buf, iSize);
   CommFortGetData(dwPluginID, GD_CLIENT_RIGHT_GET, Buf, iSize, @msg[0], i);
   CopyMemory(@Result, @Buf[0], 4);
+end;
+
+// -------------------------------- Other --------------------------------------
+function TCommPluginC.FixImage(channel: string; var img: TJpegImage): Boolean;
+var
+	bmp: TBitmap;
+  byteSize, pixelSize: DWord;
+  aspect: Double;
+begin
+	bmp := TBitmap.Create;
+	try
+  	Result := False;
+		// ѕроверка соответстви€ требовани€м канала
+		if (PROG_TYPE = 0) then
+		begin
+			AskMaxImageSize(channel, byteSize, pixelSize);
+			if (byteSize > 0) then
+			begin
+				if (img.Width * img.Height > Int(pixelSize)) then
+				begin
+					aspect := img.Width / img.Height;
+					bmp.SetSize(Trunc(Sqrt(pixelSize * aspect)), Trunc(Sqrt(pixelSize / aspect)));
+					bmp.Canvas.StretchDraw(bmp.Canvas.Cliprect, img);
+					img.Assign(bmp);
+					bmp.Dormant;
+					bmp.FreeImage;
+				end;
+  		end;
+  	end;
+    Result := True;
+  finally
+    bmp.Free;
+  end;
+end;
+
+function GetJPEGFromFile(filename: string) : TJPEGImage;
+var
+	bmp: TBitmap;
+begin
+	Result := TJPEGImage.Create;
+	bmp := TBitmap.Create;
+	try
+    if (Length(filename) > 4) and (Copy(filename, Length(filename) - 3, 4) = '.bmp') then
+    begin
+      bmp.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'Plugins\Mafia\img\' + filename);
+      Result.Assign(bmp);
+    end
+    else
+      Result.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'Plugins\Mafia\img\' + filename);
+  finally
+    bmp.Free;
+  end;
 end;
 
 end.

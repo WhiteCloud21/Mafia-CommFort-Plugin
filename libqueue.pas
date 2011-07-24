@@ -15,8 +15,7 @@ type
       1      - Вызов функции
       другое - CommFortProcess
     }
-    Value: TBytes;
-    BufLength: DWord;
+    Value: TMemoryStream;
     Next: PMsgList;
   end;
 
@@ -30,7 +29,8 @@ type
     public
       constructor Create(dwThisPluginID : DWORD; func : TtypeCommFortProcess);
       destructor Destroy; override;
-      procedure InsertMsg(MsgType: DWord; Value: TBytes; BufLength: DWord);
+      procedure InsertMsg(MsgType: DWord; Value: TBytes; BufLength: DWord); overload;
+      procedure InsertMsg(MsgType: DWord; Value: TMemoryStream); overload;
       procedure RefreshTimer(Sender: TObject);
   end;
 
@@ -72,14 +72,24 @@ implementation
 
   procedure TMsgQueue.InsertMsg(MsgType: DWord; Value: TBytes; BufLength: DWord);
   var
+    Stream: TMemoryStream;
+  begin
+    Stream :=TMemoryStream.Create;
+    Stream.WriteBuffer(Value[0], BufLength);
+    InsertMsg(MsgType, Stream);
+  end;
+
+  procedure TMsgQueue.InsertMsg(MsgType: DWord; Value: TMemoryStream);
+  var
     P, NewItem : PMsgList;
   begin
+    Value.Seek(0, soBeginning);
     //-----Создание элемента-------------
     New(NewItem);
     NewItem^.MsgType:=MsgType;
-    SetLength(NewItem^.Value, BufLength);
-    NewItem^.Value:=Value;
-    NewItem^.BufLength:=BufLength;
+    NewItem^.Value := TMemoryStream.Create();
+    NewItem^.Value.LoadFromStream(Value);
+    NewItem^.Value.Seek(0, soBeginning);
     NewItem^.Next:=nil;
     //-----------------------------------
 
@@ -125,13 +135,14 @@ implementation
       begin
         case Msg^.MsgType of
           QUEUE_MSGTYPE_CALL: begin
-            CopyMemory(@Proc, @Msg^.Value[0], 4);
+            //CopyMemory(@Proc, @Msg^.Value[0], 4);
+            Msg^.Value.ReadBuffer(Proc, 4);
             TProc(Proc)();
           end;
           else
-            CommFortProcess(dwPluginID, Msg^.MsgType,@Msg^.Value[0], Msg^.BufLength);
+            CommFortProcess(dwPluginID, Msg^.MsgType, Msg^.Value.Memory, Msg^.Value.Size);
         end;
-        Msg^.Value:=nil;
+        Msg^.Value.Free;
         P:=Msg;
         Msg:=Msg^.Next;
         Dispose(P);
@@ -145,7 +156,8 @@ implementation
       //--------------Спец. события---------------
       if Flag then
       begin
-        CopyMemory(@PauseTime, @Msg^.Value[0], 4);
+        //CopyMemory(@PauseTime, @Msg^.Value[0], 4);
+        Msg^.Value.ReadBuffer(PauseTime, 4);
         Timer.Interval:=PauseTime;
         Timer.Enabled:=True;
         Msg^.Value:=nil;

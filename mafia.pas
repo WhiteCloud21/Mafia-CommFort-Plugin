@@ -4352,7 +4352,6 @@ end;
            end;
 
       end;
-
     end;
     //-----------------------------------------------------
     MsgToChannel(game_chan, GetRandomTextFromIni(file_messages, 'StartDay'));
