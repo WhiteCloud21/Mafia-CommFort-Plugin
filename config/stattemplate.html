@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="ru-ru" xml:lang="ru-ru">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <title>Статистика игры &quot;Мафия&quot;</title>
+  <style>
+    table {
+      border:1px solid black;
+    }
+    
+    .UserStatsHeader {
+      background-color: silver;
+    }
+    
+    .even {
+      background-color: #EEEEEE;
+    }
+
+    .odd {
+      background-color: #FFFFFF;
+    }    
+  </style>
+</head>
+<body>
+  <center>
+    <h1>Статистика игры &quot;Мафия&quot;</h1>
+    <table>
+      <tr class="UserStatsHeader">
+        <td>Имя</td><td>Рейтинг</td><td>Очки</td><td>Победы</td>
+      </tr>
+      <userrow /><tr class="UserStats %evenodd%"><td title="Имя">%NAME%</td><td title="Рейтинг">%RATE%</td><td title="Очки">%POINTS%</td><td title="Очки">%WINS%</td></tr>    
+    </table>
+  <h6>Последнее обновление: %timestamp%</h6>
+  </center>
+</body>
+</html>
