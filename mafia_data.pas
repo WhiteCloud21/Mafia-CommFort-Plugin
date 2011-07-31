@@ -10,6 +10,12 @@ const
 
     setRoles: set of 1..255 = [1..9, 51, 101..104, 151, 201..203];
 
+    // Вещи в магазине
+    SHOP_ITEMS_COUNT = 2;
+
+    SHOP_ITEM_MASK = 1;
+    SHOP_ITEM_RADIO = 2;
+
 type
   MafUser = record
     id: Word;
@@ -131,6 +137,7 @@ var
     UseRole: array [3..255] of Byte;
     RoleMinPlayers: array [3..99] of Byte;
     RoleKnowCom: array [3..99] of Boolean;
+    ShopItemAllowed: array [0..SHOP_ITEMS_COUNT] of Boolean;
   end;
 
   points_cost: array [1..255] of Integer;

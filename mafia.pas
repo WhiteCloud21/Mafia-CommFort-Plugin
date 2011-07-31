@@ -735,6 +735,7 @@ implementation
     StrList: TStringList;
     k: Byte;
     I: integer;
+    index: Integer;
     Ini: TIniFile;
   begin
     //------------------------- Индивидуальные настройки -----------------------
@@ -1478,33 +1479,39 @@ implementation
           Str:='Доступные вещи:'+Chr(13)+Chr(10);
 
           //-------------------------------------------------------------------
-          Str:=Str+'1. [b]'+Messages.Values['ItemMask']+'[/b] (Цена:'+IntToStr(mask_price)+') - предмет';
-          if (PlayersArr[i]^.use_mask=0) then
-            Str:=Str+'доступен для покупки'
-          else
-            if (PlayersArr[i]^.use_mask=1) then
-              Str:=Str+'будет использован этой ночью'
-            else
-              Str:=Str+'уже использован';
-          Str:=Str+Chr(13)+Chr(10);
-          Str:=Str+Messages.Values['ItemMaskDesc'];
-          Str:=Str+Chr(13)+Chr(10);
-          Str:=Str+Chr(13)+Chr(10);
+          if Gametype.ShopItemAllowed[SHOP_ITEM_MASK] then
+          begin
+          	Str:=Str+'1. [b]'+Messages.Values['ItemMask']+'[/b] (Цена:'+IntToStr(mask_price)+') - предмет';
+          	if (PlayersArr[i]^.use_mask=0) then
+            	Str:=Str+'доступен для покупки'
+          	else
+            	if (PlayersArr[i]^.use_mask=1) then
+              	Str:=Str+'будет использован этой ночью'
+            	else
+              	Str:=Str+'уже использован';
+          	Str:=Str+Chr(13)+Chr(10);
+          	Str:=Str+Messages.Values['ItemMaskDesc'];
+          	Str:=Str+Chr(13)+Chr(10);
+          	Str:=Str+Chr(13)+Chr(10);
+          end;
           //-------------------------------------------------------------------
 
           //-------------------------------------------------------------------
-          Str:=Str+'2. [b]'+Messages.Values['ItemRadio']+'[/b] (Цена:'+IntToStr(radio_price)+') - предмет';
-          if (PlayersArr[i]^.use_mask=0) then
-            Str:=Str+'доступен для покупки'
-          else
-            if (PlayersArr[i]^.use_mask=1) then
-              Str:=Str+'будет использован этой ночью'
-            else
-              Str:=Str+'уже использован';
-          Str:=Str+Chr(13)+Chr(10);
-          Str:=Str+Messages.Values['ItemRadioDesc'];
-          Str:=Str+Chr(13)+Chr(10);
-          Str:=Str+Chr(13)+Chr(10);
+          if Gametype.ShopItemAllowed[SHOP_ITEM_RADIO] then
+          begin
+          	Str:=Str+'2. [b]'+Messages.Values['ItemRadio']+'[/b] (Цена:'+IntToStr(radio_price)+') - предмет';
+          	if (PlayersArr[i]^.use_mask=0) then
+            	Str:=Str+'доступен для покупки'
+          	else
+            	if (PlayersArr[i]^.use_mask=1) then
+              	Str:=Str+'будет использован этой ночью'
+            	else
+              	Str:=Str+'уже использован';
+          	Str:=Str+Chr(13)+Chr(10);
+          	Str:=Str+Messages.Values['ItemRadioDesc'];
+          	Str:=Str+Chr(13)+Chr(10);
+          	Str:=Str+Chr(13)+Chr(10);
+          end;
           //-------------------------------------------------------------------
 
           Str:=Str+Messages.Values['ShopText'];
@@ -1522,8 +1529,14 @@ implementation
       if (i>0) and (PlayersArr[i]^.gamestate>0) then
       begin
         Text:=Copy(Text,9,Length(Text)-8);
+        index := StrToIntDef(Text, 0);
+
+        // Выход, если предмет неразрешен
+        if (index > SHOP_ITEMS_COUNT) or (index < 0) or not Gametype.ShopItemAllowed[index] then
+        	exit;
+
         case StrToIntDef(Text, 0) of
-          1: begin
+          SHOP_ITEM_MASK: begin
                 if (PlayersArr[i]^.use_mask=0) then
                 begin
                   if (PlayersArr[i]^.points>=mask_price) then
@@ -1542,7 +1555,7 @@ implementation
                     PrivateMsg(User.Name,Messages.Values['ItemBoughtTwice']);
              end;
 
-          2: begin
+          SHOP_ITEM_RADIO: begin
                 if (PlayersArr[i]^.use_radio=0) then
                 begin
                   if (PlayersArr[i]^.points>=radio_price) then
@@ -1560,10 +1573,9 @@ implementation
                   else
                     PrivateMsg(User.Name,Messages.Values['ItemBoughtTwice']);
              end;
-
         end;
       end;
-      exit;
+      Exit;
     end;
 
   end;
@@ -1809,7 +1821,7 @@ implementation
     if Gametype.ComType>2 then
       Gametype.ComType:=0;
 
-    Gametype.ComKillManiac:=(Gametype.ComType=0) and (Ini.ReadString(GametypeName, 'ComKillManiac', '1')='1');
+    Gametype.ComKillManiac:=(Gametype.ComType=0) and (Ini.ReadInteger(GametypeName, 'ComKillManiac', 1)=1);
 
     Gametype.RandomHelpers:=Ini.ReadInteger(GametypeName, 'ComHelpers', 2);
 
@@ -1820,12 +1832,15 @@ implementation
         if Gametype.UseRole[i]>2 then
           Gametype.UseRole[i]:=1;
         Gametype.RoleMinPlayers[i]:=Ini.ReadInteger(GametypeName, 'RoleMinPlayers_'+IntToStr(i), 0);
-        Gametype.RoleKnowCom[i]:=(Ini.ReadString(GametypeName, 'RoleKnowCom_'+IntToStr(i), '0')='1');
+        Gametype.RoleKnowCom[i]:=(Ini.ReadInteger(GametypeName, 'RoleKnowCom_'+IntToStr(i), 0)=1);
       end;
 
     for i:=102 to 255 do
       if (i in setRoles) and not (i in [101,151]) then
         Gametype.UseRole[i]:=Ini.ReadInteger(GametypeName, 'UseRole_'+IntToStr(i), 2);
+
+    for i := 1 to SHOP_ITEMS_COUNT do
+      Gametype.ShopItemAllowed[i] := (Ini.ReadInteger(GametypeName, 'ShopItemAllowed_'+IntToStr(i), 1)=1);
 
     Gametype.PlayersForSpecialMaf:=Ini.ReadInteger(GametypeName, 'PlayersForSpecialMaf', 12);
     if (Gametype.PlayersForSpecialMaf/Gametype.MafCount < 3) then
