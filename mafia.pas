@@ -4,7 +4,7 @@ interface
 
 uses
   IniFiles,
-  Windows, WinInet, SysUtils, Classes, SyncObjs,
+  Windows, WinInet, SysUtils, Classes, SyncObjs, DateUtils,
   Math, Controls, StdCtrls, ExtCtrls, ComCtrls, Buttons,
   comm_info, comm_data, mafia_data, libfunc, libqueue, libstat;
 
@@ -25,6 +25,7 @@ type
   procedure LoadMessages();
   procedure LoadSettings(LoadAll: Boolean=true);
   procedure LoadGametype(GametypeName: String ='');
+  procedure ClearOldUsers();
   procedure ChangeGametype();
 
   function Init():Integer;
@@ -429,7 +430,7 @@ implementation
 
       if (Copy(Text,1,5) ='!стоп') then           //Остановка игры
       begin
-        if isUserModer(User.Name) and (State=1) and (get_state<3) then
+        if isUserModer(User.Name) and (State=1) and (SubState<3) then
           StopPlayerGetting()
         else
           if isUserModer(User.Name) and (State>1) and (State<>255) then
@@ -625,7 +626,7 @@ implementation
       begin
         i:=UserInGame(User.Name);
         if (i>0) and (lawyer_player=i) and (PlayersArr[i]^.activity=0) and
-          not (Gametype.InstantCheck and (night_state<>1)) then // Последовательные ходы
+          not (Gametype.InstantCheck and (SubState<>1)) then // Последовательные ходы
         begin
           StrList:=TStringList.Create;
           StrList.Delimiter:=' ';
@@ -812,7 +813,7 @@ implementation
       exit;
     end;
 
-    if (Copy(Text,1,8)='!принять') and (State=1) and (time_accept>0) and (get_state=5) then
+    if (Copy(Text,1,8)='!принять') and (State=1) and (time_accept>0) and (SubState=5) then
     begin
       i:=UserInGame(User.Name);
       if (i>0) and (RoleAccept[i]=0) and (playersArr[i]^.gamestate>1) then
@@ -870,7 +871,7 @@ implementation
     begin
       i:=UserInGame(User.Name);
       if (i>0) and (com_player=i) and (PlayersArr[i]^.activity=0) and
-        not (Gametype.InstantCheck and (night_state<>1)) then
+        not (Gametype.InstantCheck and (SubState<>1)) then
       begin
         StrList:=TStringList.Create;
         StrList.Delimiter:=' ';
@@ -902,7 +903,7 @@ implementation
         StrList.Free;
       end
       else if (i>0) and (lawyer_player=i) and (PlayersArr[i]^.activity=0) and
-          not (Gametype.InstantCheck and (night_state<>1)) then
+          not (Gametype.InstantCheck and (SubState<>1)) then
         begin
           StrList:=TStringList.Create;
           StrList.Delimiter:=' ';
@@ -933,7 +934,7 @@ implementation
           StrList.Free;
         end
       else if (i>0) and (homeless_player=i) and (PlayersArr[i]^.activity=0) and
-          not (Gametype.InstantCheck and (night_state<>1)) then
+          not (Gametype.InstantCheck and (SubState<>1)) then
         begin
           StrList:=TStringList.Create;
           StrList.Delimiter:=' ';
@@ -966,7 +967,7 @@ implementation
     begin
       i:=UserInGame(User.Name);
       if (i>0) and (putana_player=i) and (PlayersArr[i]^.activity=0) and
-        not (Gametype.InstantCheck and (night_state<>0)) then
+        not (Gametype.InstantCheck and (SubState<>0)) then
       begin
         StrList:=TStringList.Create;
         StrList.Delimiter:=' ';
@@ -1687,6 +1688,7 @@ implementation
     time_pause := Ini.ReadInteger('Mafia', 'TimePause', 1000);
     time_day := GetTimeFromStr(Ini.ReadString('Mafia', 'TimeDay', '60'));
     time_evening := GetTimeFromStr(Ini.ReadString('Mafia', 'TimeEvening', '20'));
+    time_lastWord := GetTimeFromStr(Ini.ReadString('Mafia', 'TimeLastWord', '10'));
     time_ban:=Ini.ReadFloat('Mafia', 'TimeBan', 1.0);
 
     ip_filter:=(Ini.ReadInteger('Mafia', 'IPFilter', 0)>0);
@@ -1716,6 +1718,11 @@ implementation
     update_greeting:=(Ini.ReadInteger('Stats', 'UpdateGreeting', 0)=1);
     export_stats:=(Ini.ReadInteger('Stats', 'Export', 0)=1);
     file_export_stats:=Ini.ReadString('Stats', 'File', 'C:\MafStats.html');
+
+    time_removeUsers := Ini.ReadInteger('Mafia', 'TimeRemoveUsers', 0);
+    if (time_removeUsers < 1) then
+    	time_removeUsers := 0;
+
 
     msg_format_begin:=Ini.ReadString('Mafia', 'MsgFormatBegin', '');
     msg_format_end:=Ini.ReadString('Mafia', 'MsgFormatEnd', '');
@@ -1853,6 +1860,27 @@ implementation
     changegametype_current_games:=changegametype_games;
   end;
 
+	procedure ClearOldUsers();
+  var
+    ini: TIniFile;
+    sections: TStringList;
+    i: Integer;
+	begin
+  	if time_removeUsers > 0 then
+    begin
+    	ini := TIniFile.Create(file_users);
+      sections := TStringList.Create;
+      ini.ReadSections(sections);
+      for i := 0 to Sections.Count - 1 do
+      begin
+      	if (IncDay(ini.ReadDateTime(sections.Strings[i], 'LastPlay', 0), time_removeUsers) < Now) then
+  				ini.EraseSection(sections.Strings[i]);
+      end;
+    	sections.Free;
+      ini.Free;
+    end;
+	end;
+
   function Init():Integer;
   begin
     Result:=0;
@@ -1868,6 +1896,7 @@ implementation
       MessageBox(0, PChar('У Вашей учётной записи нет прав на модерирование канала "'+game_chan+'". Для работы плагина необходимо получить эти права у администратора.'), '', 0);
       PCorePlugin^.StopPlugin();
     end;
+    ClearOldUsers();
     UpdateStats();
   end;
 
@@ -1953,7 +1982,7 @@ implementation
     Flag:=True;
     case State of
       2:  begin
-        if not Gametype.InstantCheck or (night_state=1) then
+        if not Gametype.InstantCheck or (SubState=1) then
         begin
           for i := 1 to PlayerCount do
             if ((i in [com_player,putana_player,doctor_player,sherif_player,homeless_player]) or (PlayersArr[i]^.gamestate in [7, 101..103, 151, 201..203])) and (PlayersArr[i]^.activity=0) then
@@ -2110,7 +2139,7 @@ implementation
         if announce then
            NightActionCancel(PlayersArr[id]^.gamestate);
         //-------------------------Комиссар--------------------------------
-        if (com_player=id) and not(Gametype.InstantCheck and (night_state<>1) and (night_state<>2)) then
+        if (com_player=id) and not(Gametype.InstantCheck and (SubState<>1) and (SubState<>2)) then
         begin
           com_state:=1;
           com_target:=0;
@@ -2122,7 +2151,7 @@ implementation
         //-----------------------------------------------------------------
 
         //-------------------------Путана----------------------------------
-        if (putana_player=id) and not(Gametype.InstantCheck and (night_state<>0) and (night_state<>2)) then
+        if (putana_player=id) and not(Gametype.InstantCheck and (SubState<>0) and (SubState<>2)) then
         begin
           putana_state:=1;
           putana_target:=0;
@@ -2166,7 +2195,7 @@ implementation
         //-----------------------------------------------------------------
 
         //-------------------------Бомж------------------------------------
-        if (homeless_player=id) and not(Gametype.InstantCheck and (night_state<>1) and (night_state<>2)) then
+        if (homeless_player=id) and not(Gametype.InstantCheck and (SubState<>1) and (SubState<>2)) then
         begin
           homeless_state:=1;
           homeless_target:=0;
@@ -2200,7 +2229,7 @@ implementation
         //-----------------------------------------------------------------
 
         //-------------------------Адвокат-----------------------------------
-        if (lawyer_player=id) and not(Gametype.InstantCheck and (night_state<>1) and (night_state<>2)) then
+        if (lawyer_player=id) and not(Gametype.InstantCheck and (SubState<>1) and (SubState<>2)) then
         begin
           lawyer_state:=1;
           lawyer_target:=0;
@@ -2311,7 +2340,7 @@ implementation
     ResetTimerQ();
     State:=1;
     PlayerCount:=0;
-    get_state:=1;
+    SubState:=1;
 
     // Выход из лишних каналов
     if PROG_TYPE=0 then
@@ -2501,14 +2530,14 @@ implementation
     if State<>1 then exit;
     if PlayerCount<Gametype.MinPlayers then //Недостаточно игроков
     begin
-      Inc(get_state);
+      Inc(SubState);
       MsgToChannel(game_chan,
         StringReplace(
           StringReplace(Messages.Values['NotEnoughPlayers'],'%current%',IntToStr(PlayerCount), [rfReplaceAll]),
           '%need%',IntToStr(Gametype.MinPlayers), [rfReplaceAll]
         )
       );
-      if (get_state<3) and (PlayerCount>Gametype.MinPlayers-3) then
+      if (SubState<3) and (PlayerCount>Gametype.MinPlayers-3) then
         MsgToChannel(game_chan, GetRandomTextFromIni(file_messages, 'NotEnoughPlayers')+' Соберите '+IntToStr(Gametype.MinPlayers)+' человек:)')
       else
       begin
@@ -2528,11 +2557,11 @@ implementation
     end
     else
      begin
-      if get_state<3 then
+      if SubState<3 then
       begin
         MafTimer.Enabled:=False;
         State:=255;
-        get_state:=4;
+        SubState:=4;
         if PROG_TYPE=0 then
         begin
           Ini:=TIniFile.Create(file_config);
@@ -2630,10 +2659,10 @@ implementation
             AddRole(151); //Яки
 
       end;
-      if (time_accept>0) and (get_state=4) then
+      if (time_accept>0) and (SubState=4) then
       begin
         MafTimer.Enabled:=False;
-        get_state:=5;
+        SubState:=5;
         for i:=1 to PlayerCount do
         begin
           PrivateMsg(PlayersArr[i]^.Name, StringReplace(Messages.Values['YourPreStatus'],'%text%',RoleText[PlayersArr[i]^.gamestate,0], [rfReplaceAll]));
@@ -2651,10 +2680,10 @@ implementation
         MafTimer.Interval:=time_accept*1000;
         ResetTimerQ();
       end
-      else if (time_accept=0) or (get_state=5) then
+      else if (time_accept=0) or (SubState=5) then
       begin
         MafTimer.Enabled:=False;
-        get_state:=6;
+        SubState:=6;
         // Перераспределение неподтверждённых ролей
         if (time_accept>0) then
         begin
@@ -2745,7 +2774,7 @@ implementation
         //--------------------------------------------------------
 
         //-----------------Отправка приватов----------------------
-        for i:=1 to playerCount do
+        for i:=1 to PlayerCount do
           if getPlayerTeam(i)=2 then
             PrivateMsg(PlayersArr[i]^.Name, Str)
           else
@@ -2794,7 +2823,7 @@ end;
   var
     Str: String;
   begin
-    if (State=1) and (get_state<3) then
+    if (State=1) and (SubState<3) then
       if (UserInGame(User.Name)=0) and
         not (ip_filter and (User.IP<>'N/A') and (IPInGame(User.IP)>0)) and
         not (id_filter and (IDInGame(PCorePlugin^.AskID(User.Name))>0))
@@ -2834,7 +2863,7 @@ end;
     LeaveCount: Byte;
     Ini: TIniFile;
   begin
-    if (State=1) and (get_state<3) then
+    if (State=1) and (SubState<3) then
     begin
       UserNum:=UserInGame(User.Name);
       if UserNum>0 then
@@ -3681,11 +3710,11 @@ end;
 
     //-----------------------------------------------------
     MafTimer.Interval:=Cardinal(time_night)*1000;
-    night_state:=0;
+    SubState:=0;
     Pause(time_pause);
     if Gametype.InstantCheck and (putana_player=0) then // Нет блокирующих персонажей
     begin
-      night_state:=1;
+      SubState:=1;
       for i := 1 to PlayerCount do
         if PlayersArr[i]^.gamestate in [2, 9, 51, 103] then
           PrivateMsg(PlayersArr[i]^.Name, Messages.Values['NightInfoNoBlocker']);
@@ -3703,12 +3732,12 @@ end;
     MafTimer.Enabled:=False;
     if Gametype.InstantCheck then
     begin
-      Inc(night_state);
-      if night_state=1 then
+      Inc(SubState);
+      if SubState=1 then
         for i := 1 to PlayerCount do
           if PlayersArr[i]^.gamestate in [2, 9, 51, 103] then
             PrivateMsg(PlayersArr[i]^.Name, Messages.Values['NightInfoBlockerAccepted']);
-      if night_state<2 then
+      if SubState<2 then
       begin
         MafTimer.Interval:=Cardinal(time_night)*500;
         ResetTimerQ();
@@ -3734,14 +3763,14 @@ end;
       //---------------------------------------------------
 
       //------------------------Рация----------------------
-      if (PlayersArr[i]^.use_radio>1) then
+      if (PlayersArr[i]^.use_radio > 1) then
         Dec(PlayersArr[i]^.use_radio);
       //---------------------------------------------------
     end;
     //-----------------------------------------------------
 
     //--------------------------Путана---------------------
-    if (putana_state=2) and (putana_target>0) then
+    if (putana_state = 2) and (putana_target > 0) then
     begin
       if putana_target<>putana_player then
         CancelActivity(putana_target, false);      //Отменяем активность "Жертвы"
@@ -4377,42 +4406,70 @@ end;
     MafTimer.Interval:=Cardinal(time_day)*1000;
     ResetTimerQ();
     State:=4;
+    SubState := 0;
   end;
 
-  procedure EndDay();
-  begin
-    if time_evening>0 then
-      StartEvening()
-    else
-      EndEvening();
-  end;
-
-  procedure StartEvening();
+  // SubState:
+  // 0 - окончание голосования
+  // 1 - окончание последнего слова
+	procedure EndDay();
   var
-    I: Byte;
     target: TwoByte;
-  begin
-    State:=255;
-    VotingYesNo[0]:=0; // Не сажать
-    VotingYesNo[1]:=0; // Посадить
-
-    for I := 1 to PlayerCount do
-      PlayersArr[I]^.voting:=-1;
-
-    MsgToChannel(game_chan, GetRandomTextFromIni(file_messages, 'StartEvening'));
-    Pause(time_pause);
+	begin
+		Inc(SubState);
     target:=VoteResult();
-    if (target[0]>0) and (target[1]>0) then
-    begin
-      MsgToChannel(game_chan, StringReplace(Messages.Values['EveningVoteInfo'],'%name%',FormatNick(PlayersArr[target[1]]^.name),[rfReplaceAll]));
-      MafTimer.Interval:=Cardinal(time_evening)*1000;
-      ResetTimerQ();
-      State:=5;
+
+    // Пропуск последнего слова
+    if (target[0] <= 0) or (target[1] <= 0) or (time_lastWord <= 0) then
+    	Inc(SubState);
+
+		case SubState - 1 of
+    	0: begin
+        if (target[0] > 0) and (target[1] > 0) and (time_lastWord > 0) then
+        begin
+					MsgToChannel(game_chan, StringReplace(Messages.Values['YouHaveTheLastWord'],'%name%',FormatNick(PlayersArr[target[1]]^.name),[rfReplaceAll]));
+					MafTimer.Interval:=Cardinal(time_lastWord)*1000;
+					ResetTimerQ();
+        end
+      end;
+			1: StartEvening();
+    end;
+	end;
+
+	procedure StartEvening();
+	var
+		I: Byte;
+		target: TwoByte;
+  begin
+		State:=255;
+		if time_evening>0 then
+		begin
+			VotingYesNo[0]:=0; // Не сажать
+			VotingYesNo[1]:=0; // Посадить
+
+			for I := 1 to PlayerCount do
+				PlayersArr[I]^.voting:=-1;
+
+			MsgToChannel(game_chan, GetRandomTextFromIni(file_messages, 'StartEvening'));
+			Pause(time_pause);
+			target:=VoteResult();
+			if (target[0]>0) and (target[1]>0) then
+			begin
+				MsgToChannel(game_chan, StringReplace(Messages.Values['EveningVoteInfo'],'%name%',FormatNick(PlayersArr[target[1]]^.name),[rfReplaceAll]));
+				MafTimer.Interval:=Cardinal(time_evening)*1000;
+				ResetTimerQ();
+				State:=5;
+        //SubState:=0;
+			end
+			else
+			begin
+				EndEvening();
+			end;
     end
     else
     begin
-      EndEvening();
-    end
+    	EndEvening();
+    end;
   end;
 
   procedure EndEvening();
@@ -4430,6 +4487,7 @@ end;
       
     //-----------------------Голоса----------------------
     target:=VoteResult();
+
     if target[0]>0 then   //Max
     begin
       if ((time_evening=0) or (time_evening>0) and (VotingYesNo[1]>VotingYesNo[0])) and (target[1]>0) then //Номер

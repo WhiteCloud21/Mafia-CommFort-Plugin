@@ -107,9 +107,12 @@ var
   time_morning : Word;
   time_day : Word;
   time_evening : Word;
+  time_lastWord : Word;
   time_accept: Word;
   time_pause: Word;
   time_ban: Double;
+
+  time_removeUsers: Integer;
 
   ip_filter, id_filter: Boolean;
   start_night: Boolean;
@@ -336,8 +339,7 @@ var
 
   maf_ingame: Byte;
 
-  get_state: Byte;      //—татус набора игроков
-  night_state: Byte;    //—татус ночи (при последовательных ходах ролей)
+  SubState: Byte;    // ƒополнительное состо€ние игры (статус набора игроков, половина ночи и.т.д.)
 
   TopPoints : array [1..TopMaxPlayers] of record
     Name: String;

@@ -213,9 +213,9 @@ implementation
   begin
     try
       LoadStatsFile();
+      UpdateTopCriticalSection.Enter;
       if UsersCount>0 then
         SortStats();
-      UpdateTopCriticalSection.Enter;
       try
         for I := 1 to TopMaxPlayers do
         begin
