@@ -242,8 +242,9 @@ begin
   Ini.WriteInteger('Mafia',  'TimeNight', TSpinEdit(edtList[1][2]).Value);
   Ini.WriteInteger('Mafia',  'TimeMorning', TSpinEdit(edtList[1][3]).Value);
   Ini.WriteInteger('Mafia',  'TimeDay', TSpinEdit(edtList[1][4]).Value);
-  Ini.WriteInteger('Mafia',  'TimeEvening', TSpinEdit(edtList[1][5]).Value);
-  Ini.WriteInteger('Mafia',  'TimePause', TSpinEdit(edtList[1][6]).Value);
+  Ini.WriteInteger('Mafia',  'TimeLastWord', TSpinEdit(edtList[1][5]).Value);
+  Ini.WriteInteger('Mafia',  'TimeEvening', TSpinEdit(edtList[1][6]).Value);
+  Ini.WriteInteger('Mafia',  'TimePause', TSpinEdit(edtList[1][7]).Value);
   //---------------------------------------------------------------------------
 
   //---------------------------------------------------------------------------
@@ -458,14 +459,15 @@ begin
 
   //---------------------------------------------------------------------------
   // Вторая вкладка - время
-  SetLength(lblList[1], 7);
-  SetLength(edtList[1], 7);
+  SetLength(lblList[1], 8);
+  SetLength(edtList[1], 8);
 
   AddParameterNumEdit(1, 'Время на набор игроков (с)', Ini, 'Mafia', 'TimeStart', 60, 20, 600, 10);
   AddParameterNumEdit(1, 'Время на подтверждение роли (с)', Ini, 'Mafia', 'TimeAccept', 30, 0, 180, 10);
   AddParameterNumEdit(1, 'Продолжительность ночи (с)', Ini, 'Mafia', 'TimeNight', 60, 30, 600, 10);
   AddParameterNumEdit(1, 'Продолжительность утра (с)', Ini, 'Mafia', 'TimeMorning', 25, 10, 600, 10);
   AddParameterNumEdit(1, 'Продолжительность дня (с)', Ini, 'Mafia', 'TimeDay', 60, 20, 600, 10);
+  AddParameterNumEdit(1, 'Время на последнее слово (с)', Ini, 'Mafia', 'TimeLastWord', 15, 0, 600, 10);
   AddParameterNumEdit(1, 'Продолжительность вечера (с)', Ini, 'Mafia', 'TimeEvening', 20, 0, 600, 10);
   AddParameterNumEdit(1, 'Время паузы между сообщениями бота (мс)', Ini, 'Mafia', 'TimePause', 1000, 1, 15000, 500);
   //---------------------------------------------------------------------------
