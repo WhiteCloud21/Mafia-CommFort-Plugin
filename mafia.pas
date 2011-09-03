@@ -2574,7 +2574,10 @@ implementation
         Pause(time_pause);
         Ini:=TIniFile.Create(file_data);
         if (Ini.ReadInteger('Global','MaxPlayers',0)<PlayerCount) then
+        begin
           Ini.WriteInteger('Global','MaxPlayers',PlayerCount);
+          Ini.WriteDateTime('Global','MaxPlayersDateTime',Now);					
+        end
         Ini.Free;
 
         com_phrase:='';

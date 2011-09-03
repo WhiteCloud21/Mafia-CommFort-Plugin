@@ -169,6 +169,7 @@ implementation
       //----------------- Замена переменных шаблона---------------------------
       Str:=StringReplace(Str,  '%timestamp%', DateTimeToStr(Now), [rfReplaceAll]+[rfIgnoreCase]);
       Str:=StringReplace(Str,  '%maxplayers%', IniData.ReadString('Global','MaxPlayers','0'), [rfReplaceAll]+[rfIgnoreCase]);
+      Str:=StringReplace(Str, '%maxplayersdatetime%', DateTimeToStr(IniData.ReadDateTime('Global','MaxPlayersDateTime', 0)), [rfReplaceAll]+[rfIgnoreCase]);
       Str:=StringReplace(Str,  '%totalplayers%', IntToStr(UsersCount), [rfReplaceAll]+[rfIgnoreCase]);
       //----------------------------------------------------------------------
       if (Pos('<userrow />', Str)>0) then // Строка заменяется для каждого пользователя
