@@ -45,20 +45,6 @@
 			<DelphiCompile Include="plugin.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="comm_info.pas"/>
-			<DCCReference Include="comm_plugin.pas"/>
-			<DCCReference Include="comm_data.pas"/>
-			<DCCReference Include="mafia.pas"/>
-			<DCCReference Include="libfunc.pas"/>
-			<DCCReference Include="libstat.pas"/>
-			<DCCReference Include="libqueue.pas"/>
-			<DCCReference Include="settings.pas">
-				<Form>frmSettings</Form>
-			</DCCReference>
-			<DCCReference Include="mafia_data.pas"/>
-			<DCCReference Include="about.pas">
-				<Form>frmAbout</Form>
-			</DCCReference>
 			<None Include="ModelSupport_plugin\default.txaPackage"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
