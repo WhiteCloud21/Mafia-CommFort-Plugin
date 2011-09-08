@@ -12,5 +12,7 @@
 [center][b]-=Лучшие игроки=-[/b][/center]
 <userrow />%POSITION%. [url]%NAME%[/url] - [b]Рейтинг:[/b] %RATE%, [b]очки:[/b] %POINTS%, [b]победы:[/b] %WINS%
 
+Максимальное количество пользователей, играющих одновременно: %maxplayers%. Зафиксировано %maxplayersdatetime%.
+
 [right]__________
 Последнее обновление: %timestamp%[/right]
