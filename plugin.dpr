@@ -22,6 +22,7 @@ uses
   SysUtils,
   Classes,
   ExceptionJCLSupport,
+  MyIniFiles in 'MyIniFiles.pas',
   comm_info in 'comm_info.pas',
   comm_plugin in 'comm_plugin.pas',
   comm_data in 'comm_data.pas',

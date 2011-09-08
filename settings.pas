@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, Tabs, StdCtrls,  ShellAPI,
-  comm_info, mafia, mafia_data, comm_data, IniFiles, ComCtrls, Spin;
+  comm_info, mafia, mafia_data, comm_data, MyIniFiles, ComCtrls, Spin;
 
 type
   TfrmSettings = class(TForm)

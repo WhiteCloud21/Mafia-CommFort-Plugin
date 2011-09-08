@@ -3,7 +3,7 @@ unit libfunc;
 interface
 
 uses
-  Windows, IniFiles, comm_info, comm_data, libqueue, SysUtils;
+  Windows, MyIniFiles, comm_info, comm_data, libqueue, SysUtils;
 
   procedure MsgToChannel(Channel, Msg:string);
   procedure StatusToChannel(Channel, Msg:string);

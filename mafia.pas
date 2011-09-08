@@ -3,7 +3,7 @@ unit mafia;
 interface
 
 uses
-  IniFiles,
+  MyIniFiles,
   Windows, WinInet, SysUtils, Classes, SyncObjs, DateUtils,
   Math, Controls, StdCtrls, ExtCtrls, ComCtrls, Buttons,
   comm_info, comm_data, mafia_data, libfunc, libqueue, libstat;
@@ -2577,7 +2577,7 @@ implementation
         begin
           Ini.WriteInteger('Global','MaxPlayers',PlayerCount);
           Ini.WriteDateTime('Global','MaxPlayersDateTime',Now);					
-        end
+        end;
         Ini.Free;
 
         com_phrase:='';

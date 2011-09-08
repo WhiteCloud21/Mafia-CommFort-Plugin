@@ -3,7 +3,7 @@ unit libstat;
 interface
 
 uses
-  Windows, Classes, IniFiles, comm_info, comm_data, mafia_data, libfunc, SysUtils;
+  Windows, Classes, MyIniFiles, comm_info, comm_data, mafia_data, libfunc, SysUtils;
 
   procedure SortStats_QuickSort(l, r: Integer);
 
@@ -210,7 +210,7 @@ implementation
   procedure TUpdateStatThread.Execute;
   var
     OutList: TStringList;
-    I: Word;
+    I: Integer;
   begin
     try
       LoadStatsFile();

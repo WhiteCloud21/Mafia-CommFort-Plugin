@@ -5,7 +5,7 @@ interface
 uses Windows,
       comm_info,
       comm_data,
-      IniFiles, WinInet,
+      MyIniFiles, WinInet,
       SysUtils, Classes, Math, ShellAPI,
       mafia, mafia_data,
       libfunc;
