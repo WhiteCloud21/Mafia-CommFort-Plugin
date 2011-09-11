@@ -2031,7 +2031,7 @@ implementation
     except
       on e: exception do
       begin
-        Str:=Str+'/'+IntToStr(State)+MafiaDump()+Chr(13)+Chr(10);
+        Str:=Str+'/'+IntToStr(State)+' SubState='+IntToStr(SubState)+MafiaDump()+Chr(13)+Chr(10);
         PCorePlugin^.onError(PCorePlugin^, e, Str);
       end;
     end;
@@ -4434,8 +4434,8 @@ end;
 					MafTimer.Interval:=Cardinal(time_lastWord)*1000;
 					ResetTimerQ();
         end
-      end;
-			1: StartEvening();
+      end
+			else StartEvening();
     end;
 	end;
 

@@ -244,20 +244,26 @@ implementation
       if update_greeting then
       begin
         OutList:=ParseTemplate(file_template_greeting, top_default);
-        ChangeGreeting(game_chan, OutList.Text);
-        OutList.Free;
+        try
+        	ChangeGreeting(game_chan, OutList.Text);
+        finally
+        	OutList.Free;
+        end;
       end;
       if export_stats then
       begin
         OutList:=ParseTemplate(file_template, UsersCount);
-        OutList.SaveToFile(file_export_stats, TEncoding.UTF8);
-        OutList.Free;
+        try
+        	OutList.SaveToFile(file_export_stats, TEncoding.UTF8);
+        finally
+        	OutList.Free;
+        end;
       end;
-      UserStats:=nil;
     except
       on e: exception do
         PCorePlugin^.onError(PCorePlugin^, e, '-------------Exception while exporting stats---------');
     end;
+    UserStats:=nil;
   end;
 
   procedure UpdateStats();
