@@ -485,7 +485,7 @@ implementation
         exit;
       end;
 
-      if (Copy(Text,1,10) = '!посадить ') and (State=4) then
+      if (Copy(Text,1,10) = '!посадить ') and (State=4) and (SubState = 0) then
       begin
         i:=UserInGame(User.Name);
         if (i>0) and (PlayersArr[i]^.gamestate>0) and (PlayersArr[i]^.activity=0) then
@@ -997,7 +997,7 @@ implementation
       exit;
     end;
 
-    if (Copy(Text,1,11) = '!оправдать ') and (State=4) then
+    if (Copy(Text,1,11) = '!оправдать ') and (State=4) and (SubState = 0) then
     begin
       i:=UserInGame(User.Name);
       if (i>0) and (judge_player=i) and (PlayersArr[i]^.activity2=0) then
@@ -1031,7 +1031,7 @@ implementation
       exit;
     end;
 
-    if (Copy(Text,1,10) = '!посадить ') and (State=4) then
+    if (Copy(Text,1,10) = '!посадить ') and (State=4) and (SubState = 0) then
     begin
       i:=UserInGame(User.Name);
       if (i>0) and (PlayersArr[i]^.gamestate=6) and (PlayersArr[i]^.activity2=0) then
@@ -1349,7 +1349,7 @@ implementation
         exit;
       end;
 
-      if (i>0) and (PlayersArr[i]^.gamestate=6) and (State=4) and (PlayersArr[i]^.activity2>0) then //Старейшина
+      if (i>0) and (PlayersArr[i]^.gamestate=6) and (State=4) and (SubState = 0) and (PlayersArr[i]^.activity2>0) then //Старейшина
       begin
         PlayersArr[i]^.activity2:=0;
         PrivateMsg(User.Name, Messages.Values['VoteCancelPM']);
@@ -2289,7 +2289,7 @@ implementation
       //--------------------------------------------------------------------
 
       //----------------------Голосование днем------------------------------
-      if State=4 then
+      if (State=4) and (SubState = 0) then
       begin
         Dec(Voting[PlayersArr[id]^.activity]);
         PlayersArr[id]^.activity:=0;
