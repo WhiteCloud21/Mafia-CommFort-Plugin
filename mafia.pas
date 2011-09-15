@@ -1668,6 +1668,9 @@ implementation
   begin
     // Заполнение текста
     RoleText:=LoadRoles();
+		
+    // Загрузка сообщений
+    LoadMessages();
 
     Ini := TIniFile.Create(file_config);
     game_chan := Ini.ReadString('Mafia', 'Channel', 'мафия');
@@ -1757,8 +1760,6 @@ implementation
       ChangeGametype();
     Ini.Free;
 
-    // Загрузка сообщений
-    LoadMessages();
 
   end;
 
