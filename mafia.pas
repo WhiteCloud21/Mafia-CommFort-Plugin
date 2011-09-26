@@ -1961,7 +1961,7 @@ implementation
     SetLength(Buf, 4);
     Ptr:=@ResetTimer;
     CopyMemory(@Buf[0], @Ptr, 4);
-    MsgQueue.InsertMsg(QUEUE_MSGTYPE_CALL, @Buf[0], 4);
+    MsgQueue.InsertMsg(QUEUE_MSGTYPE_CALL, Buf, 4);
     Buf:=nil;
   end;
 

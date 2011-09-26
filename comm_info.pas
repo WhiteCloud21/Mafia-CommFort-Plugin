@@ -38,7 +38,7 @@ type
       procedure AddImageToChannel(Name, channel : string; filename : String); overload;
       procedure AddPrivateImage(Name, User : string; image : TJpegImage); overload;
       procedure AddPrivateImage(Name, User : string; filename : String); overload;
-      procedure AddTheme(Name:String; channel : string; newtheme : string);
+      procedure AddTheme(Name:String; Channel : string; Theme : string);
       procedure AddGreeting(Name:String; channel : string; Text : string);
       procedure AddState(Name, newstate : string);
       procedure AddChannel(Name, channel : string; visibility, regime : DWord);
@@ -383,6 +383,7 @@ begin
   i:=i+4;
   //CommFortProcess(dwPluginID, PM_PLUGIN_JOIN_VIRTUAL_USER, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_JOIN_VIRTUAL_USER, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.LeaveVirtualUser(Name: String);
@@ -398,51 +399,43 @@ begin
   i:=4+len*2;
   //CommFortProcess(dwPluginID, PM_PLUGIN_LEAVE_VIRTUAL_USER, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_LEAVE_VIRTUAL_USER, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.AddMessageToChannel(Name, channel : string; regime : DWord; text : string);
 var
-  msg: TBytes;
-  i, len: DWord;
+  msg: TMemoryStream;
+  len: DWord;
 begin
   case PROG_TYPE of
     0:
       begin
-        len:=Length(Name)*2+Length(Channel)*2+Length(Text)*2+16;
-        SetLength(msg, len);
+        msg := TMemoryStream.Create;
         len:=Length(Name);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Name), len*2);
-        i:=4+len*2;
-        CopyMemory(@msg[i], @regime, 4);
-        i:=i+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Name)^, len*2);
+        msg.WriteBuffer(regime, 4);
         len:=Length(Channel);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Channel), len*2);
-        i:=i+len*2+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_PLUGIN_SNDMSG_PUB, @msg[0], i);
-        MsgQueue.InsertMsg(PM_PLUGIN_SNDMSG_PUB, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_PLUGIN_SNDMSG_PUB, msg);
+        msg.Free;
       end;
     1:
       begin
-        len:=Length(Channel)*2+Length(Text)*2+12;
-        SetLength(msg, len);
+        msg := TMemoryStream.Create;
+        msg.WriteBuffer(regime, 4);
         len:=Length(Channel);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Channel), len*2);
-        i:=4+len*2;
-        CopyMemory(@msg[i], @regime, 4);
-        i:=i+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_CLIENT_SNDMSG_PUB, @msg[0], i);
-        MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PUB, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PUB, msg);
+        msg.Free;
       end;
   end;
 end;
@@ -470,6 +463,7 @@ begin
         image.SaveToStream(msg);
         stream.Free;
         MsgQueue.InsertMsg(PM_PLUGIN_SNDIMG_PUB, msg);
+        msg.Free;
       end;
     1:
       begin
@@ -487,6 +481,7 @@ begin
         image.SaveToStream(msg);
         stream.Free;
         MsgQueue.InsertMsg(PM_CLIENT_SNDIMG_PUB, msg);
+        msg.Free;
       end;
   end;
 end;
@@ -512,47 +507,38 @@ end;
 
 procedure TCommPluginC.AddPrivateMessage(Name: String; regime : DWord; user : string; text : string);
 var
-  msg: TBytes;
-  i, len: DWord;
+  msg: TMemoryStream;
+  len: DWord;
 begin
   case PROG_TYPE of
     0:
       begin
-        len:=Length(Name)*2+Length(User)*2+Length(Text)*2+16;
-        SetLength(msg, len);
+      	msg := TMemoryStream.Create;
         len:=Length(Name);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Name), len*2);
-        i:=4+len*2;
-        CopyMemory(@msg[i], @regime, 4);
-        i:=i+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Name)^, len*2);
+        msg.WriteBuffer(regime, 4);
         len:=Length(User);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(User), len*2);
-        i:=i+len*2+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(User)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_PLUGIN_SNDMSG_PRIV, @msg[0], i);
-        MsgQueue.InsertMsg(PM_PLUGIN_SNDMSG_PRIV, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_PLUGIN_SNDMSG_PRIV, msg);
+        msg.Free;
       end;
     1:
       begin
-        len:=Length(User)*2+Length(Text)*2+12;
-        SetLength(msg, len);
+        msg := TMemoryStream.Create;
+        msg.WriteBuffer(regime, 4);
         len:=Length(User);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(User), len*2);
-        i:=4+len*2;
-        CopyMemory(@msg[i], @regime, 4);
-        i:=i+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(User)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_CLIENT_SNDMSG_PRIV, @msg[0], i);
-        MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PRIV, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PRIV, msg);
+        msg.Free;
       end;
   end;
 end;
@@ -663,90 +649,77 @@ begin
       MsgQueue.InsertMsg(PM_CLIENT_SNDMSG_PM, msg, i);
     end;
   end;
+  msg := nil;
 end;
 
-procedure TCommPluginC.AddTheme(Name:String; channel : string; newtheme : string);
+procedure TCommPluginC.AddTheme(Name:String; Channel : string; Theme : string);
 var
-  msg: TBytes;
-  i, len: DWord;
+  msg: TMemoryStream;
+  len: DWord;
 begin
   case PROG_TYPE of
     0:
       begin
-        len:=Length(Name)*2+Length(Channel)*2+Length(newtheme)*2+12;
-        SetLength(msg, len);
+        msg := TMemoryStream.Create;
         len:=Length(Name);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Name), len*2);
-        i:=4+len*2;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Name)^, len*2);
         len:=Length(Channel);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Channel), len*2);
-        i:=i+len*2+4;
-        len:=Length(newtheme);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(newtheme), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_PLUGIN_THEME_CHANGE, @msg[0], i);
-        MsgQueue.InsertMsg(PM_PLUGIN_THEME_CHANGE, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
+        len:=Length(Theme);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Theme)^, len*2);
+        MsgQueue.InsertMsg(PM_PLUGIN_THEME_CHANGE, msg);
+        msg.Free;
       end;
     1:
       begin
-        len:=Length(Channel)*2+Length(newtheme)*2+12;
-        SetLength(msg, len);
+      	msg := TMemoryStream.Create;
         len:=Length(Channel);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Channel), len*2);
-        i:=len*2+4;
-        len:=Length(newtheme);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(newtheme), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_CLIENT_THEME_CHANGE, @msg[0], i);
-        MsgQueue.InsertMsg(PM_CLIENT_THEME_CHANGE, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
+        len:=Length(Theme);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Theme)^, len*2);
+        MsgQueue.InsertMsg(PM_CLIENT_THEME_CHANGE, msg);
+        msg.Free;
       end;
   end;
 end;
 
 procedure TCommPluginC.AddGreeting(Name:String; channel : string; Text : string);
 var
-  msg: TBytes;
-  i, len: DWord;
+  msg: TMemoryStream;
+  len: DWord;
 begin
   case PROG_TYPE of
     0:
       begin
-        len:=Length(Name)*2+Length(Channel)*2+Length(Text)*2+12;
-        SetLength(msg, len);
+      	msg := TMemoryStream.Create;
         len:=Length(Name);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Name), len*2);
-        i:=4+len*2;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Name)^, len*2);
         len:=Length(Channel);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Channel), len*2);
-        i:=i+len*2+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_PLUGIN_THEME_CHANGE, @msg[0], i);
-        MsgQueue.InsertMsg(PM_PLUGIN_GREETING_CHANGE, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_PLUGIN_GREETING_CHANGE, msg);
+        msg.Free;
       end;
     1:
       begin
-        len:=Length(Channel)*2+Length(Text)*2+12;
-        SetLength(msg, len);
+      	msg := TMemoryStream.Create;
         len:=Length(Channel);
-        CopyMemory(@msg[0], @len, 4);
-        CopyMemory(@msg[4], PChar(Channel), len*2);
-        i:=len*2+4;
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Channel)^, len*2);
         len:=Length(Text);
-        CopyMemory(@msg[i], @len, 4);
-        CopyMemory(@msg[i+4], PChar(Text), len*2);
-        i:=i+len*2+4;
-        //CommfortProcess(dwPluginID, PM_CLIENT_THEME_CHANGE, @msg[0], i);
-        MsgQueue.InsertMsg(PM_CLIENT_GREETING_CHANGE, msg, i);
+        msg.WriteBuffer(len, 4);
+        msg.WriteBuffer(PChar(Text)^, len*2);
+        MsgQueue.InsertMsg(PM_CLIENT_GREETING_CHANGE, msg);
+        msg.Free;
       end;
   end;
 end;
@@ -768,6 +741,7 @@ begin
   i:=i+len*2+4;
   //CommfortProcess(dwPluginID, PM_PLUGIN_STATUS_CHANGE, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_STATUS_CHANGE, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.AddChannel(Name, channel : string; visibility, regime : DWord);
@@ -809,6 +783,7 @@ begin
       MsgQueue.InsertMsg(PM_CLIENT_CHANNEL_JOIN, msg, i);
     end;
   end;
+  msg := nil;
 end;
 
 procedure TCommPluginC.LeaveChannel(Name, channel : string);
@@ -844,6 +819,7 @@ begin
         MsgQueue.InsertMsg(PM_CLIENT_CHANNEL_LEAVE, msg, i);
       end;
   end;
+  msg := nil;
 end;
 
 procedure TCommPluginC.ClientLeavePrivate(User : string);
@@ -859,6 +835,7 @@ begin
   i:=len*2+4;
   //CommfortProcess(dwPluginID, PM_CLIENT_PRIVATE_LEAVE, @msg[0], i);
   MsgQueue.InsertMsg(PM_CLIENT_PRIVATE_LEAVE, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.AddRestriction(Name: String; restrictiontype, identificationtype, anonymitytype : DWord; time : Double; ident : string; Channel : string; reason : string);
@@ -894,6 +871,7 @@ begin
   i:=i+4;
   //CommfortProcess(dwPluginID, PM_PLUGIN_RESTRICT_SET, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_RESTRICT_SET, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.RemoveRestriction(Name: String; restrictionid : DWORD; reason : string);
@@ -915,6 +893,7 @@ begin
   i:=i+len*2+4;
   //CommfortProcess(dwPluginID, PM_PLUGIN_RESTRICT_DEL, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_RESTRICT_DEL, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.RemoveChannel(Name, channel : string);
@@ -934,6 +913,7 @@ begin
   i:=i+len*2+4;
   //CommfortProcess(dwPluginID, PM_PLUGIN_CHANNEL_DEL, @msg[0], i);
   MsgQueue.InsertMsg(PM_PLUGIN_CHANNEL_DEL, msg, i);
+  msg := nil;
 end;
 
 procedure TCommPluginC.StopPlugin;
@@ -952,6 +932,7 @@ begin
   SetLength(Buf, iSize);
   CommFortGetData(dwPluginID, GD_PROGRAM_TYPE, Buf, iSize, nil, 0);
   CopyMemory(@Result, @Buf[0], 4);
+  Buf := nil;
 end;
 
 function TCommPluginC.AskProgramVersion():String;
@@ -964,6 +945,7 @@ begin
   CommFortGetData(dwPluginID, GD_PROGRAM_VERSION, Buf, iSize, nil, 0);
   CopyMemory(@iSize, @Buf[0], 4);
   Result:=TEncoding.Unicode.GetString(Buf, 4, iSize*2);
+  Buf := nil;
 end;
 
 function TCommPluginC.AskPluginTempPath():String;
@@ -976,6 +958,7 @@ begin
   CommFortGetData(dwPluginID, GD_PLUGIN_TEMPPATH, Buf, iSize, nil, 0);
   CopyMemory(@iSize, @Buf[0], 4);
   Result:=TEncoding.Unicode.GetString(Buf, 4, iSize*2);
+  Buf := nil;
 end;
 
 procedure TCommPluginC.AskMaxImageSize(channel: String; var ByteSize: DWord; var PixelSize: DWord);

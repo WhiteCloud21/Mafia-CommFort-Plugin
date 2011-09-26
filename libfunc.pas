@@ -137,6 +137,7 @@ begin
   SetLength(Buf, 4);
   CopyMemory(@Buf[0], @time, 4);
   MsgQueue.InsertMsg(QUEUE_MSGTYPE_PAUSE, Buf, 4);
+  Buf := nil;
 end;
 
 function FormatNick(Name:String): String;

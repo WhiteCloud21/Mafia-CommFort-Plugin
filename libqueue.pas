@@ -64,6 +64,7 @@ implementation
     begin
       P:=Msg;
       Msg:=Msg^.Next;
+      P^.Value.Free;
       P^.Value:=nil;
       Dispose(P);
     end;
@@ -160,6 +161,7 @@ implementation
         Msg^.Value.ReadBuffer(PauseTime, 4);
         Timer.Interval:=PauseTime;
         Timer.Enabled:=True;
+        Msg^.Value.Free;
         Msg^.Value:=nil;
         P:=Msg;
         Msg:=Msg^.Next;

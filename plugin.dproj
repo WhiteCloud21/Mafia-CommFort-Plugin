@@ -47,9 +47,7 @@
 			<DelphiCompile Include="plugin.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="comm_info.pas">
-				<ModuleName>MyIniFiles</ModuleName>
-			</DCCReference>
+			<DCCReference Include="MyIniFiles.pas"/>
 			<DCCReference Include="comm_info.pas"/>
 			<DCCReference Include="comm_plugin.pas"/>
 			<DCCReference Include="comm_data.pas"/>
