@@ -98,7 +98,7 @@ begin
         Break;
       end;
     finally
-      FreeMem(Buffer, BufSize);
+      FreeMem(Buffer, BufSize * SizeOf(Char));
     end;
     BufSize := BufSize * 4;
   end;

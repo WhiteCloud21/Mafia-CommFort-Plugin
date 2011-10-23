@@ -36,6 +36,8 @@
 			<DCC_K>false</DCC_K>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_RangeChecking>false</DCC_RangeChecking>
+			<DCC_IntegerOverflowCheck>false</DCC_IntegerOverflowCheck>
 			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">

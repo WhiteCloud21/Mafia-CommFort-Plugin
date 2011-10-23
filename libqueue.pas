@@ -78,6 +78,7 @@ implementation
     Stream :=TMemoryStream.Create;
     Stream.WriteBuffer(Value[0], BufLength);
     InsertMsg(MsgType, Stream);
+    Stream.Free;
   end;
 
   procedure TMsgQueue.InsertMsg(MsgType: DWord; Value: TMemoryStream);
@@ -144,6 +145,7 @@ implementation
             CommFortProcess(dwPluginID, Msg^.MsgType, Msg^.Value.Memory, Msg^.Value.Size);
         end;
         Msg^.Value.Free;
+        Msg^.Value := nil;
         P:=Msg;
         Msg:=Msg^.Next;
         Dispose(P);
