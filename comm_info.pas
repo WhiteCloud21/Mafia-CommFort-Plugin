@@ -1168,22 +1168,20 @@ end;
 
 function TCommPluginC.ClientAskRight(RightType: DWord; Channel: String):DWord;
 var
-  msg: TBytes;
+  msg: TMemoryStream;
   Buf: TBytes;
-  iSize, i, len: DWord;
+  len: DWord;
 begin
-  len:=Length(Channel)*2+8;
-  SetLength(msg, len);
-  CopyMemory(@msg[0], @RightType, 4);
-  i:=4;
+	msg := TMemoryStream.Create;
+  msg.WriteBuffer(RightType, 4);
   len:=Length(Channel);
-  CopyMemory(@msg[i], @len, 4);
-  CopyMemory(@msg[i+4], PChar(Channel), len*2);
-  i:=i+4+len*2;
-  iSize := CommFortGetData(dwPluginID, GD_CLIENT_RIGHT_GET, nil, 0, @msg[0], i);
-  SetLength(Buf, iSize);
-  CommFortGetData(dwPluginID, GD_CLIENT_RIGHT_GET, Buf, iSize, @msg[0], i);
+  msg.WriteBuffer(len, 4);
+  msg.WriteBuffer(PChar(Channel)^, len*2);
+  len := CommFortGetData(dwPluginID, GD_CLIENT_RIGHT_GET, nil, 0, msg.Memory, msg.Size);
+  SetLength(Buf, len);
+  CommFortGetData(dwPluginID, GD_CLIENT_RIGHT_GET, Buf, len, msg.Memory, msg.Size);
   CopyMemory(@Result, @Buf[0], 4);
+  msg.Free;
 end;
 
 // -------------------------------- Other --------------------------------------
