@@ -417,10 +417,10 @@ begin
     1:
       begin
         msg := TMemoryStream.Create;
-        msg.WriteBuffer(regime, 4);
         len:=Length(Channel);
         msg.WriteBuffer(len, 4);
         msg.WriteBuffer(PChar(Channel)^, len*2);
+        msg.WriteBuffer(regime, 4);
         len:=Length(Text);
         msg.WriteBuffer(len, 4);
         msg.WriteBuffer(PChar(Text)^, len*2);
@@ -520,10 +520,10 @@ begin
     1:
       begin
         msg := TMemoryStream.Create;
-        msg.WriteBuffer(regime, 4);
         len:=Length(User);
         msg.WriteBuffer(len, 4);
         msg.WriteBuffer(PChar(User)^, len*2);
+        msg.WriteBuffer(regime, 4);
         len:=Length(Text);
         msg.WriteBuffer(len, 4);
         msg.WriteBuffer(PChar(Text)^, len*2);
