@@ -165,7 +165,7 @@ const
 
   MAX_NAME = 30;
 
-  PLU_VER  = '3.7.3';
+  PLU_VER  = '3.8.0 beta';
 
   PLU_NAME = 'Мафия (игра) '+PLU_VER;
 
@@ -177,6 +177,8 @@ var
   BOT_ISFEMALE: Byte;
   BOT_IP: String;
   PROG_TYPE:Byte;
+
+  PLUGIN_FILENAME: String;
 
   // Пути к файлам
   config_dir: String;

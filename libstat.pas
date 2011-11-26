@@ -213,8 +213,8 @@ implementation
     I: Integer;
   begin
     try
-      LoadStatsFile();
       UpdateTopCriticalSection.Enter;
+      LoadStatsFile();
       if UsersCount>0 then
         SortStats();
       try

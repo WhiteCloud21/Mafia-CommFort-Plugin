@@ -32,7 +32,8 @@ uses
   libqueue in 'libqueue.pas',
   settings in 'settings.pas' {frmSettings},
   mafia_data in 'mafia_data.pas',
-  about in 'about.pas' {frmAbout};
+  about in 'about.pas' {frmAbout},
+  libuserdata in 'libuserdata.pas';
 
 {$E cfplug}
 

@@ -6,7 +6,7 @@ uses
   MyIniFiles,
   Windows, WinInet, SysUtils, Classes, SyncObjs, DateUtils,
   Math, Controls, StdCtrls, ExtCtrls, ComCtrls, Buttons,
-  comm_info, comm_data, mafia_data, libfunc, libqueue, libstat;
+  comm_info, comm_data, mafia_data, libfunc, libqueue, libstat, libuserdata;
 
 type
 
@@ -25,7 +25,6 @@ type
   procedure LoadMessages();
   procedure LoadSettings(LoadAll: Boolean=true);
   procedure LoadGametype(GametypeName: String ='');
-  procedure ClearOldUsers();
   procedure ChangeGametype();
 
   function Init():Integer;
@@ -152,6 +151,33 @@ implementation
     Result:='[code]'+Result+'[/code]';
     if outtype>0 then
       StatusToChannel(game_chan, Chr(13)+Chr(10)+Result);
+  end;
+
+  procedure MessageToTeam(teamId: Byte; Msg: String);
+	var
+  	I: Integer;
+  begin
+    case teamId of
+    	TEAM_MAF:
+      	if link_mode then
+        begin
+        	for I := 1 to PlayerCount do
+            if GetPlayerTeam(I) = TEAM_MAF then
+              PrivateMsg(PlayersArr[I]^.name, Msg);
+        end
+        else
+        	MsgToChannel(maf_chan, Msg);
+
+    	TEAM_YAKUZA:
+      	if link_mode then
+        begin
+        	for I := 1 to PlayerCount do
+            if GetPlayerTeam(I) = TEAM_YAKUZA then
+              PrivateMsg(PlayersArr[I]^.name, Msg);
+        end
+        else
+        	MsgToChannel(y_chan, Msg);
+    end;
   end;
 
   procedure AddPoints(id: Byte; points: Integer);
@@ -357,6 +383,10 @@ implementation
 
     target: TwoByte;
   begin
+  	// Отсутствие реакции на события, если файл статистики еще не очищен
+  	if not IsCleanupStatsFinished then
+    	Exit;
+
     if Channel=game_chan then
     begin
       member.name :=User.Name;
@@ -364,59 +394,63 @@ implementation
 
       if Copy(Text,1,4)='!топ' then
       begin
-        TopLimit:=StrToIntDef(Copy(Text,6,Length(Text)-5), top_default);
+			  TopLimit := 0;
+				if (Length(Text) > 5) then
+          TopLimit:=StrToIntDef(Copy(Text,6,Length(Text)-5), top_default);
         if (TopLimit<1) or (TopLimit>TopMaxPlayers) then
            TopLimit:=TopMaxPlayers;
 
         StrList:=TStringList.Create;
-        UpdateTopCriticalSection.Enter;
         try
-          //----------------------------------------------------------------------
-          StrList.Add('');
-          StrList.Add(StringReplace(Messages.Values['TopPoints'],'%toplimit%',IntToStr(TopLimit),[rfReplaceAll]));
-          for i:=1 to TopLimit do
+        	if UpdateTopCriticalSection.TryEnter then
           begin
-            if TopPoints[i].Name<>'' then
-            begin
-              Str:='_';
-              for k:=1 to (MAX_NAME+1-Length(TopPoints[I].Name)) do
-                Str:=Str+'_';
+          	//----------------------------------------------------------------------
+          	StrList.Add('');
+          	StrList.Add(StringReplace(Messages.Values['TopPoints'],'%toplimit%',IntToStr(TopLimit),[rfReplaceAll]));
+          	for i:=1 to TopLimit do
+          	begin
+            	if TopPoints[i].Name<>'' then
+            	begin
+              	Str:='_';
+              	for k:=1 to (MAX_NAME+1-Length(TopPoints[I].Name)) do
+                	Str:=Str+'_';
 
-              Str:=Str+IntToStr(TopPoints[I].Points);
+              	Str:=Str+IntToStr(TopPoints[I].Points);
 
-              StrList.Add(IntToStr(i)+'. '+TopPoints[I].Name+Str);
-            end;
+              	StrList.Add(IntToStr(i)+'. '+TopPoints[I].Name+Str);
+            	end;
+          	end;
+          	//----------------------------------------------------------------------
+
+          	StrList.Add('');
+          	StrList.Add(StringReplace(Messages.Values['TopRate'],'%toplimit%',IntToStr(TopLimit),[rfReplaceAll]));
+          	for i:=1 to TopLimit do
+          	begin
+            	if TopRate[i].Name<>'' then
+            	begin
+              	Str:='_';
+              	for k:=1 to (MAX_NAME+1-Length(TopRate[I].Name)) do
+                	Str:=Str+'_';
+
+              	Str:=Str+FloatToStrF(TopRate[I].Rate, ffFixed, 20, 4);
+
+              	StrList.Add(IntToStr(i)+'. '+TopRate[I].Name+Str);
+            	end;
+          	end;
+          	//----------------------------------------------------------------------
+
+
+          	//--------------По ролям--------------------------
+          	if State<2 then
+          	begin
+            	StrList.Add('');
+            	StrList.Add(Messages.Values['TopRoles']);
+            	for i:=1 to 255 do
+              	if TopRole[i].Name<>'' then
+                	StrList.Add(roleText[i, 0]+': [url=/message: '+TopRole[i].Name+']'+TopRole[i].Name+'[/url] - '+IntToStr(TopRole[i].Plays)+' игр');
+          	end;
+          	//----------------------------------------------------------------------
           end;
-          //----------------------------------------------------------------------
-
-          StrList.Add('');
-          StrList.Add(StringReplace(Messages.Values['TopRate'],'%toplimit%',IntToStr(TopLimit),[rfReplaceAll]));
-          for i:=1 to TopLimit do
-          begin
-            if TopRate[i].Name<>'' then
-            begin
-              Str:='_';
-              for k:=1 to (MAX_NAME+1-Length(TopRate[I].Name)) do
-                Str:=Str+'_';
-
-              Str:=Str+FloatToStrF(TopRate[I].Rate, ffFixed, 20, 4);
-
-              StrList.Add(IntToStr(i)+'. '+TopRate[I].Name+Str);
-            end;
-          end;
-          //----------------------------------------------------------------------
-
-
-          //--------------По ролям--------------------------
-          if State<2 then
-          begin
-            StrList.Add('');
-            StrList.Add(Messages.Values['TopRoles']);
-            for i:=1 to 255 do
-              if TopRole[i].Name<>'' then
-                StrList.Add(roleText[i, 0]+': [url=/message: '+TopRole[i].Name+']'+TopRole[i].Name+'[/url] - '+IntToStr(TopRole[i].Plays)+' игр');
-          end;
-          //----------------------------------------------------------------------
         finally
           UpdateTopCriticalSection.Leave;
         end;
@@ -739,6 +773,10 @@ implementation
     index: Integer;
     Ini: TIniFile;
   begin
+  	// Отсутствие реакции на события, если файл статистики еще не очищен
+  	if not IsCleanupStatsFinished then
+    	Exit;
+
     //------------------------- Индивидуальные настройки -----------------------
     if Text='отстань' then
     begin
@@ -746,6 +784,7 @@ implementation
       Ini.WriteInteger(CheckStr(User.Name), 'announce', 0);
       PrivateMsg(User.Name, Messages.Values['StopAnnouncePM']);
       Ini.Free;
+      Exit;
     end;
 
     if Text='предупреждай' then
@@ -754,6 +793,7 @@ implementation
       Ini.WriteInteger(CheckStr(User.Name), 'announce', 1);
       PrivateMsg(User.Name, Messages.Values['StartAnnouncePM']);
       Ini.Free;
+      Exit;
     end;
 
     if Text='не предупреждай о смерти' then
@@ -762,6 +802,7 @@ implementation
       Ini.WriteInteger(CheckStr(User.Name), 'dmess', 0);
       PrivateMsg(User.Name, Messages.Values['StopAnnounceDeath']);
       Ini.Free;
+      Exit;
     end;
 
     if Text='предупреждай о смерти' then
@@ -770,6 +811,7 @@ implementation
       Ini.WriteInteger(CheckStr(User.Name), 'dmess', 1);
       PrivateMsg(User.Name, Messages.Values['StartAnnounceDeath']);
       Ini.Free;
+      Exit;
     end;
 
     if Copy(Text,1,9)='настройки' then
@@ -797,15 +839,27 @@ implementation
 
       PrivateMsg(User.Name, Str);
       Ini.Free;
+      Exit;
     end;
     //--------------------------------------------------------------------------
 
     if (Copy(Text,1,15)='написать в main') and isUserModer(User.Name) then
+    begin
       MsgToChannel(main_chan[1], Copy(Text,17,Length(Text)-16));
+      Exit;
+    end;
+
     if (Copy(Text,1,13)='создать канал') and isUserModer(User.Name) then
+    begin
       CreateChannel(Copy(Text,15,Length(Text)-14),0,0);
+      Exit;
+    end;
+
     if (Copy(Text,1,15)='выйти из канала') and isUserModer(User.Name) then
+    begin
       QuitChannel(Copy(Text,17,Length(Text)-16));
+      Exit;
+    end;
 
     if (Copy(Text,1,2)='!я') or (Copy(Text,1,2)='!z') or (Copy(Text,1,2)='!Я') or (Copy(Text,1,2)='!Z') then           //Присоединение к игре
     begin
@@ -823,7 +877,7 @@ implementation
         if Gametype.ShowRolesOnStart then
           MsgToChannel(game_chan, GetRandomTextFromIni(file_messages, 'AcceptRole_'+intToStr(playersArr[i]^.gamestate)));
       end;
-
+      Exit;
     end;
     
     if Copy(Text,1,9) = '!мой стат' then
@@ -922,7 +976,7 @@ implementation
               begin
                 PrivateMsg(User.Name, 'Статус '+ FormatNick(PlayersArr[lawyer_target]^.name)
                   + ' - [b]' + RoleText[PlayersArr[lawyer_target]^.gamestate,0]+'[/b]');
-                MsgToChannel(maf_chan, 'Результат проверки '+RoleText[PlayersArr[lawyer_player]^.gamestate, 1]+': Статус ' + FormatNick(PlayersArr[lawyer_target]^.name)
+                MessageToTeam(TEAM_MAF, 'Результат проверки '+RoleText[PlayersArr[lawyer_player]^.gamestate, 1]+': Статус ' + FormatNick(PlayersArr[lawyer_target]^.name)
                   + ' - [b]' + RoleText[PlayersArr[lawyer_target]^.gamestate,0]+'[/b]');
               end;
             end
@@ -1148,7 +1202,6 @@ implementation
         end;
       end;
       exit;
-      exit;
     end;
 
     if (Copy(Text,1,7) = '!убить ') and (State=2) then
@@ -1175,10 +1228,16 @@ implementation
           PlayersArr[i]^.activity:=StrToIntDef(StrList.Strings[0], 0);
           PrivateMsg(User.Name, Messages.Values['VoteAcceptedPM']);
           if (PlayersArr[i]^.gamestate=101) then
-            Inc(Voting[StrToIntDef(StrList.Strings[0], 0)])
+          begin
+            Inc(Voting[StrToIntDef(StrList.Strings[0], 0)]);
+            MessageToTeam(TEAM_MAF, User.Name + '> голос принят против игрока ' + StrList.Strings[0] + ' - ' + PlayersArr[StrToIntDef(StrList.Strings[0], 0)]^.Name);
+          end
           else
             if (PlayersArr[i]^.gamestate=151) then
+            begin
               Inc(Voting2[StrToIntDef(StrList.Strings[0], 0)]);
+              MessageToTeam(TEAM_YAKUZA, User.Name + '> голос принят против игрока ' + StrList.Strings[0] + ' - ' + PlayersArr[StrToIntDef(StrList.Strings[0], 0)]^.Name);
+            end;
           if fast_game then
             CheckNextCP();
         end;
@@ -1226,7 +1285,7 @@ implementation
           PrivateMsg(User.Name, Messages.Values['VoteAcceptedPM']);
           StrList.Delete(0);
           podrivnik_phrase:=StringReplace(StrList.Text,Chr(13)+Chr(10),' ',[rfReplaceAll]);
-          MsgToChannel(maf_chan, StringReplace(Messages.Values['DemolitionActivityAccepted'],'%text%',NightPlaces[podrivnik_target],[rfReplaceAll]));
+          MessageToTeam(TEAM_MAF, StringReplace(Messages.Values['DemolitionActivityAccepted'],'%text%',NightPlaces[podrivnik_target],[rfReplaceAll]));
         end;
         StrList.Free;
       end;
@@ -1305,6 +1364,7 @@ implementation
         end;
         StrList.Free;
       end;
+      Exit;
     end;
 
     if (Copy(Text,1,11) = '!проклясть ') and (State=2) then
@@ -1334,6 +1394,7 @@ implementation
         else
           PrivateMsg(User.Name, Messages.Values['ManiacAlreadyUsedCurse']);
       end;
+      Exit;
     end;
 
     if Copy(Text,1,7)='!отмена' then           //Отмена голоса
@@ -1579,6 +1640,19 @@ implementation
       Exit;
     end;
 
+    if (Copy(Text, 1, 1) <> '!') and link_mode then
+    begin
+    	i:=UserInGame(User.Name);
+      if (i > 0) then
+      begin
+        if (GetPlayerTeam(i) = TEAM_MAF) then
+          MessageToTeam(TEAM_MAF, User.Name + ': ' + Text)
+        else if (GetPlayerTeam(i) = TEAM_YAKUZA) then
+          MessageToTeam(TEAM_YAKUZA, User.Name + ': ' + Text);
+      end;
+      Exit;
+    end;
+    
   end;
 
   procedure onPersonalMsg(User: TUser; Text: String);
@@ -1694,12 +1768,12 @@ implementation
     time_lastWord := GetTimeFromStr(Ini.ReadString('Mafia', 'TimeLastWord', '10'));
     time_ban:=Ini.ReadFloat('Mafia', 'TimeBan', 1.0);
 
-    ip_filter:=(Ini.ReadInteger('Mafia', 'IPFilter', 0)>0);
-    id_filter:=(PROG_TYPE=0) and (Ini.ReadInteger('Mafia', 'IDFilter', 0)>0);
-    start_night:=(Ini.ReadInteger('Mafia', 'StartFromNight', 1)>0);
-    show_night_actions:=(Ini.ReadInteger('Mafia', 'ShowNightActions', 1)>0);
-    ban_on_death:=(PROG_TYPE=0) and (Ini.ReadInteger('Mafia', 'BanOnDeath', 1)>0);
-    ban_private_on_death:=ban_on_death and (Ini.ReadInteger('Mafia', 'BanPrivateOnDeath', 0)>0);
+    ip_filter:=(Ini.ReadInteger('Mafia', 'IPFilter', 0) > 0);
+    id_filter:=(PROG_TYPE=0) and (Ini.ReadInteger('Mafia', 'IDFilter', 0) > 0);
+    start_night:=(Ini.ReadInteger('Mafia', 'StartFromNight', 1) > 0);
+    show_night_actions:=(Ini.ReadInteger('Mafia', 'ShowNightActions', 1) > 0);
+    ban_on_death:=(PROG_TYPE=0) and (Ini.ReadInteger('Mafia', 'BanOnDeath', 1) > 0);
+    ban_private_on_death:=ban_on_death and (Ini.ReadInteger('Mafia', 'BanPrivateOnDeath', 0) > 0);
     ban_reason:=Ini.ReadString('Mafia', 'BanReason', 'Выбывание из игры');
     ban_private_reason:=Ini.ReadString('Mafia', 'BanPrivateReason', 'Выбывание из игры');
     unban_reason:=Ini.ReadString('Mafia', 'UnbanReason', 'Окончание игры');
@@ -1708,24 +1782,25 @@ implementation
     topic_play:=Ini.ReadString('Mafia', 'TopicPlay', '');
     topic_playergetting:=Ini.ReadString('Mafia', 'TopicPlayerGetting', '');
 
-    stat_to_private:=(Ini.ReadInteger('Mafia', 'StatToPrivate', 0)>0);
+    stat_to_private:=(Ini.ReadInteger('Mafia', 'StatToPrivate', 0) > 0);
     msg_send_type := Ini.ReadInteger('Mafia', 'MessagesType', 0);
-    show_votepoints:=(Ini.ReadInteger('Mafia', 'ShowVotePoints', 0)>0);
+    show_votepoints:=(Ini.ReadInteger('Mafia', 'ShowVotePoints', 0) > 0);
     if msg_send_type>2 then
       msg_send_type:=0;
 
     changegametype_notify:= Ini.ReadInteger('Mafia', 'ChangeGametypeNotify', 1);
     changegametype_games:=Ini.ReadInteger('Mafia', 'ChangeGametypeGamesCount', 0);
 
-    load_settings_on_start:=(Ini.ReadInteger('Mafia', 'ReloadSettingsOnStart', 1)>0);
-    update_greeting:=(Ini.ReadInteger('Stats', 'UpdateGreeting', 0)=1);
-    export_stats:=(Ini.ReadInteger('Stats', 'Export', 0)=1);
+    load_settings_on_start:=(Ini.ReadInteger('Mafia', 'ReloadSettingsOnStart', 1) > 0);
+    update_greeting:=(Ini.ReadInteger('Stats', 'UpdateGreeting', 0) > 0);
+    export_stats:=(Ini.ReadInteger('Stats', 'Export', 0) > 0);
     file_export_stats:=Ini.ReadString('Stats', 'File', 'C:\MafStats.html');
 
     time_removeUsers := Ini.ReadInteger('Mafia', 'TimeRemoveUsers', 0);
     if (time_removeUsers < 1) then
     	time_removeUsers := 0;
 
+    link_mode := (Ini.ReadInteger('Advanced', 'LinkMode', 0) > 0);
 
     msg_format_begin:=Ini.ReadString('Mafia', 'MsgFormatBegin', '');
     msg_format_end:=Ini.ReadString('Mafia', 'MsgFormatEnd', '');
@@ -1759,8 +1834,6 @@ implementation
     if LoadAll then
       ChangeGametype();
     Ini.Free;
-
-
   end;
 
   procedure ChangeGametype();
@@ -1861,44 +1934,24 @@ implementation
     changegametype_current_games:=changegametype_games;
   end;
 
-	procedure ClearOldUsers();
-  var
-    ini: TIniFile;
-    sections: TStringList;
-    i: Integer;
-	begin
-  	if time_removeUsers > 0 then
-    begin
-    	ini := TIniFile.Create(file_users);
-      sections := TStringList.Create;
-      ini.ReadSections(sections);
-      for i := 0 to Sections.Count - 1 do
-      begin
-      	if (IncDay(ini.ReadDateTime(sections.Strings[i], 'LastPlay', 0), time_removeUsers) < Now) then
-  				ini.EraseSection(sections.Strings[i]);
-      end;
-    	sections.Free;
-      ini.Free;
-    end;
-	end;
-
   function Init():Integer;
   begin
     Result:=0;
     UpdateTopCriticalSection := TCriticalSection.Create;
+    IsCleanupStatsFinished := False;
     MafTimer:=TTimer.Create(nil);
     MafTimer.OnTimer:=TTimerUpdater.RefreshTimer;
     Messages := TStringList.Create;
     State:=0;
     PlayerCount:=0;
     LoadSettings();
+    libuserdata.Cleanup();
+    UpdateStats();
     if (PROG_TYPE>0) and (PCorePlugin^.ClientAskRight(5, game_chan)=0) then
     begin
       MessageBox(0, PChar('У Вашей учётной записи нет прав на модерирование канала "'+game_chan+'". Для работы плагина необходимо получить эти права у администратора.'), '', 0);
       PCorePlugin^.StopPlugin();
     end;
-    ClearOldUsers();
-    UpdateStats();
   end;
 
   procedure Destroy();
@@ -2761,8 +2814,13 @@ implementation
         for i:=1 to PlayerCount do
           if getPlayerTeam(i)=2 then
             Str:=Str+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
-        Str:=Str+'Можете обсуждать свои действия в привате или логове.';
-        Str:=Str+' [url=/channel:'+maf_chan+']Ваше логово[/url]';
+        if link_mode then
+        	Str:=Str+'Можете обсуждать свои действия в привате бота, сообщения будут показываться всем мафам.'
+        else
+        begin
+        	Str:=Str+'Можете обсуждать свои действия в привате или логове.';
+        	Str:=Str+' [url=/channel:'+maf_chan+']Ваше логово[/url]';
+        end;
         //--------------------------------------------------------
 
         //-----------------Для яков------------------------------
@@ -2772,8 +2830,14 @@ implementation
           for i:=1 to PlayerCount do
             if getPlayerTeam(i)=4 then
               Str1:=Str1+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
-          Str1:=Str1+'Можете обсуждать свои действия в привате или логове.';
-          Str1:=Str1+' [url=/channel:'+y_chan+']Ваше логово[/url]';
+
+          if link_mode then
+        		Str1:=Str1+'Можете обсуждать свои действия в привате бота, сообщения будут показываться всем якудзам.'
+        	else
+        	begin
+          	Str1:=Str1+'Можете обсуждать свои действия в привате или логове.';
+          	Str1:=Str1+' [url=/channel:'+y_chan+']Ваше логово[/url]';
+        	end;
         end;
         //--------------------------------------------------------
 
@@ -3098,23 +3162,24 @@ end;
           else
             wintext:='Win_3';
     end;
-    MsgToChannel(game_chan,'[b]'+Messages.Values[wintext]+'[/b]');
-    MsgToChannel(game_chan,Messages.Values['PointsForGame']);
+    Str := Chr(13) + Chr(10) + '[b]' + Messages.Values[wintext]+ '[/b]';
+    Str := Str + Chr(13) + Chr(10) + '[b]' + Messages.Values['PointsForGame']+ '[/b]';
 
     for i:=1 to PlayerCount do
     begin
       PlayersArr[i]^.points:=PlayersArr[i]^.points+PlayersArr[i]^.gamepoints;
-      Str:=PlayersArr[i]^.name+' '
+      Str := Str + Chr(13) + Chr(10) + '  ' + PlayersArr[i]^.name+ ' '
              +IntToStr(PlayersArr[i]^.gamepoints)
              +' ('+IntToStr(PlayersArr[i]^.points)+') - [b]'+RoleText[PlayersArr[i]^.gamestate_start,0]+'[/b]';
       if (PlayersArr[i]^.gamestate = 0) then
-        Str:=Str+' ('+RoleText[PlayersArr[i]^.gamestate,0]+')';
-      MsgToChannel(game_chan, Str);
+        Str:= Str + ' (' + RoleText[PlayersArr[i]^.gamestate,0] + ')';
       //------------------Запись в БД----------------------------------------
       Ini.WriteInteger(CheckStr(PlayersArr[i]^.name), 'plays', Ini.ReadInteger(CheckStr(PlayersArr[i]^.name), 'plays', 0)+1);
       Ini.WriteInteger(CheckStr(PlayersArr[i]^.name), 'points', Ini.ReadInteger(CheckStr(PlayersArr[i]^.name), 'points', 0)+PlayersArr[i]^.gamepoints);
       //---------------------------------------------------------------------
     end;
+    MsgToChannel(game_chan, Str);
+
     for i:=1 to PlayerCount do
     begin
       if PROG_TYPE=1 then
@@ -3886,7 +3951,7 @@ end;
       begin
         PrivateMsg(PlayersArr[lawyer_player]^.name, 'Статус '+ FormatNick(PlayersArr[lawyer_target]^.name)
                   + ' - [b]' + RoleText[PlayersArr[lawyer_target]^.gamestate,0]+'[/b]');
-        MsgToChannel(maf_chan, 'Результат проверки '+RoleText[PlayersArr[lawyer_player]^.gamestate, 0]+': Статус '+ FormatNick(PlayersArr[lawyer_target]^.name)
+        MessageToTeam(TEAM_MAF, 'Результат проверки '+RoleText[PlayersArr[lawyer_player]^.gamestate, 0]+': Статус '+ FormatNick(PlayersArr[lawyer_target]^.name)
                   + ' - [b]' + RoleText[PlayersArr[lawyer_target]^.gamestate,0]+'[/b]');
       end;
       if lawyer_target=com_player then

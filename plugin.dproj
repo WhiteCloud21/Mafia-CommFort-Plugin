@@ -64,6 +64,7 @@
 			<DCCReference Include="about.pas">
 				<Form>frmAbout</Form>
 			</DCCReference>
+			<DCCReference Include="libuserdata.pas"/>
 			<None Include="ModelSupport_plugin\default.txaPackage"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

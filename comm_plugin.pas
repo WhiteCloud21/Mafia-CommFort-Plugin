@@ -38,33 +38,20 @@ var
   StrList: TStringList;
 begin
   inherited;
-  config_dir:=CorePlugin.AskPluginTempPath+'Mafia';
+  config_dir:=CorePlugin.AskPluginTempPath+PLUGIN_FILENAME;
+  if not DirectoryExists(config_dir) then
+  	config_dir:=CorePlugin.AskPluginTempPath+'Mafia';
   if not DirectoryExists(config_dir) then
     CreateDir(config_dir);
 
   StrList:=TStringList.Create;
   StrList.Add(';Файл автоматически создан '+DateTimeToStr(Now));
 
-  // Сначала пытаемся загрузить файлы из директории с временными файлами плагинов
-  file_config:=config_dir+'\config.ini';
-  if not FileExists(file_config) then
-    file_config:=ExtractFilePath(ParamStr(0))+'Plugins\Mafia\config.ini';
-
-  file_messages:=config_dir+'\messages.ini';
-  if not FileExists(file_messages) then
-    file_messages:=ExtractFilePath(ParamStr(0))+'Plugins\Mafia\messages.ini';
-
-  file_gametypes:=config_dir+'\gametypes.ini';
-  if not FileExists(file_gametypes) then
-    file_gametypes:=ExtractFilePath(ParamStr(0))+'Plugins\Mafia\gametypes.ini';
-
-  file_template:=config_dir+'\stattemplate.html';
-  if not FileExists(file_template) then
-    file_template:=ExtractFilePath(ParamStr(0))+'Plugins\Mafia\stattemplate.html';
-
-  file_template_greeting:=config_dir+'\greetingtemplate.txt';
-  if not FileExists(file_template_greeting) then
-    file_template_greeting:=ExtractFilePath(ParamStr(0))+'Plugins\Mafia\greetingtemplate.txt';
+  file_config := GetConfigFullName('config.ini');
+  file_messages := GetConfigFullName('messages.ini');
+  file_gametypes := GetConfigFullName('gametypes.ini');
+  file_template := GetConfigFullName('stattemplate.html');
+  file_template_greeting := GetConfigFullName('greetingtemplate.txt');
 
   file_users:=config_dir+'\users.ini';
   if not FileExists(file_users) then
@@ -270,5 +257,8 @@ begin
     end;
   end;
 end;
+
+begin
+	PLUGIN_FILENAME := ExtractFileNameEx(GetDllPath, false);
 
 end.

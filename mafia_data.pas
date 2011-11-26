@@ -16,6 +16,11 @@ const
     SHOP_ITEM_MASK = 1;
     SHOP_ITEM_RADIO = 2;
 
+    TEAM_PEACE = 1;
+    TEAM_MAF = 2;
+    TEAM_NEITRAL = 3;
+    TEAM_YAKUZA = 4;
+
 type
   MafUser = record
     id: Word;
@@ -127,6 +132,8 @@ var
   changegametype_games, changegametype_current_games: Byte;
   show_votepoints: Boolean;
   kill_for_no_activity: Byte;
+
+  link_mode: Boolean;
 
   Gametype: record
     Name: String;
@@ -357,6 +364,7 @@ var
   NightPlaces: array [0..2] of String;
 
   UpdateTopCriticalSection: TCriticalSection;
+  IsCleanupStatsFinished: Boolean;	// Завершена ли очистка файла статистики
 
   Messages: TStringList;
 
