@@ -154,29 +154,13 @@ implementation
   end;
 
   procedure MessageToTeam(teamId: Byte; Msg: String);
-	var
-  	I: Integer;
   begin
     case teamId of
     	TEAM_MAF:
-      	if link_mode then
-        begin
-        	for I := 1 to PlayerCount do
-            if GetPlayerTeam(I) = TEAM_MAF then
-              PrivateMsg(PlayersArr[I]^.name, Msg);
-        end
-        else
-        	MsgToChannel(maf_chan, Msg);
+      	MsgToChannel(maf_chan, Msg);
 
     	TEAM_YAKUZA:
-      	if link_mode then
-        begin
-        	for I := 1 to PlayerCount do
-            if GetPlayerTeam(I) = TEAM_YAKUZA then
-              PrivateMsg(PlayersArr[I]^.name, Msg);
-        end
-        else
-        	MsgToChannel(y_chan, Msg);
+      	MsgToChannel(y_chan, Msg);
     end;
   end;
 
@@ -849,7 +833,7 @@ implementation
       Exit;
     end;
 
-    if (Copy(Text,1,13)='создать канал') and isUserModer(User.Name) then
+    {if (Copy(Text,1,13)='создать канал') and isUserModer(User.Name) then
     begin
       CreateChannel(Copy(Text,15,Length(Text)-14),0,0);
       Exit;
@@ -859,7 +843,7 @@ implementation
     begin
       QuitChannel(Copy(Text,17,Length(Text)-16));
       Exit;
-    end;
+    end;}
 
     if (Copy(Text,1,2)='!я') or (Copy(Text,1,2)='!z') or (Copy(Text,1,2)='!Я') or (Copy(Text,1,2)='!Z') then           //Присоединение к игре
     begin
@@ -1639,20 +1623,6 @@ implementation
       end;
       Exit;
     end;
-
-    if (Copy(Text, 1, 1) <> '!') and link_mode then
-    begin
-    	i:=UserInGame(User.Name);
-      if (i > 0) then
-      begin
-        if (GetPlayerTeam(i) = TEAM_MAF) then
-          MessageToTeam(TEAM_MAF, User.Name + ': ' + Text)
-        else if (GetPlayerTeam(i) = TEAM_YAKUZA) then
-          MessageToTeam(TEAM_YAKUZA, User.Name + ': ' + Text);
-      end;
-      Exit;
-    end;
-    
   end;
 
   procedure onPersonalMsg(User: TUser; Text: String);
@@ -1665,6 +1635,8 @@ implementation
   begin
     if State>0 then
     begin
+      if link_mode and (User.Name = linker_name) then
+        Exit;
       b:=(UserInGame(User.Name) > 0);
       if Channel=maf_chan then
       begin
@@ -1801,6 +1773,9 @@ implementation
     	time_removeUsers := 0;
 
     link_mode := (Ini.ReadInteger('Advanced', 'LinkMode', 0) > 0);
+    linker_name := Ini.ReadString('Advanced', 'LinkerName', 'Linker');
+    linker_mafchan := Ini.ReadInteger('Advanced', 'LinkerChannelMaf', 0);
+    linker_ychan := Ini.ReadInteger('Advanced', 'LinkerChannelYakuza', 0);
 
     msg_format_begin:=Ini.ReadString('Mafia', 'MsgFormatBegin', '');
     msg_format_end:=Ini.ReadString('Mafia', 'MsgFormatEnd', '');
@@ -1978,13 +1953,6 @@ implementation
       end;
     if (State>1) then
     begin
-      QuitChannel(maf_chan);
-      QuitChannel(y_chan);
-      if PROG_TYPE=0 then
-      begin
-        CloseChannel(maf_chan);
-        CloseChannel(y_chan);
-      end;
 
       // Снятие ограничений
       if ban_on_death then
@@ -1996,6 +1964,18 @@ implementation
             PCorePlugin^.RemoveRestriction(BOT_NAME, Restrictions[k].restID, unban_reason);
         end;
       end;
+
+      QuitChannel(maf_chan);
+      QuitChannel(y_chan);
+      if PROG_TYPE=0 then
+      begin
+        CloseChannel(maf_chan);
+        CloseChannel(y_chan);
+      end;
+      if link_mode then
+      	PrivateMsg(linker_name, '//closechannel '+ IntToStr(linker_mafchan));
+      if link_mode then
+      	PrivateMsg(linker_name, '//closechannel '+ IntToStr(linker_ychan));
     end;
 
   end;
@@ -2686,8 +2666,14 @@ implementation
         maf_chan:='логово-'+IntToStr(Random(15531));
         y_chan:='логово_я-'+IntToStr(Random(15531));
         CreateChannel(maf_chan, 0, 0);
+        if link_mode then
+          PrivateMsg(linker_name, '//createchannel ' + IntToStr(linker_mafchan) + ' ' + maf_chan);
         if Gametype.UseYakuza then
+        begin
           CreateChannel(y_chan, 0, 0);
+          if link_mode then
+          	PrivateMsg(linker_name, '//createchannel ' + IntToStr(linker_ychan) + ' ' + y_chan)
+        end;
 
         mafCount:=Trunc(PlayerCount / Gametype.MafCount);
 
@@ -2814,13 +2800,8 @@ implementation
         for i:=1 to PlayerCount do
           if getPlayerTeam(i)=2 then
             Str:=Str+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
-        if link_mode then
-        	Str:=Str+'Можете обсуждать свои действия в привате бота, сообщения будут показываться всем мафам.'
-        else
-        begin
-        	Str:=Str+'Можете обсуждать свои действия в привате или логове.';
-        	Str:=Str+' [url=/channel:'+maf_chan+']Ваше логово[/url]';
-        end;
+        Str:=Str+'Можете обсуждать свои действия в привате или логове.';
+        Str:=Str+' [url=/channel:'+maf_chan+']Ваше логово[/url]';
         //--------------------------------------------------------
 
         //-----------------Для яков------------------------------
@@ -2830,14 +2811,8 @@ implementation
           for i:=1 to PlayerCount do
             if getPlayerTeam(i)=4 then
               Str1:=Str1+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
-
-          if link_mode then
-        		Str1:=Str1+'Можете обсуждать свои действия в привате бота, сообщения будут показываться всем якудзам.'
-        	else
-        	begin
           	Str1:=Str1+'Можете обсуждать свои действия в привате или логове.';
           	Str1:=Str1+' [url=/channel:'+y_chan+']Ваше логово[/url]';
-        	end;
         end;
         //--------------------------------------------------------
 
@@ -3180,6 +3155,18 @@ end;
     end;
     MsgToChannel(game_chan, Str);
 
+
+    // Снятие ограничений
+    if ban_on_death then
+    begin
+      Count:=PCorePlugin^.AskRestrictions(Restrictions);
+      for k := 1 to Count do
+      begin
+        if Restrictions[k].moder=BOT_NAME then
+          PCorePlugin^.RemoveRestriction(BOT_NAME, Restrictions[k].restID, unban_reason);
+      end;
+    end;
+
     for i:=1 to PlayerCount do
     begin
       if PROG_TYPE=1 then
@@ -3194,17 +3181,10 @@ end;
       CloseChannel(maf_chan);
       CloseChannel(y_chan);
     end;
-
-    // Снятие ограничений
-    if ban_on_death then
-    begin
-      Count:=PCorePlugin^.AskRestrictions(Restrictions);
-      for k := 1 to Count do
-      begin
-        if Restrictions[k].moder=BOT_NAME then
-          PCorePlugin^.RemoveRestriction(BOT_NAME, Restrictions[k].restID, unban_reason);
-      end;
-    end;
+    if link_mode then
+    	PrivateMsg(linker_name, '//closechannel '+ IntToStr(linker_mafchan));
+    if link_mode then
+    	PrivateMsg(linker_name, '//closechannel '+ IntToStr(linker_ychan));
 
     // Уменьшение количества оставшихся игр для текущего режима
     if changegametype_games>0 then

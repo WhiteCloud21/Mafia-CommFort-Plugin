@@ -134,6 +134,9 @@ var
   kill_for_no_activity: Byte;
 
   link_mode: Boolean;
+  linker_name: String;
+  linker_mafchan: Integer;
+  linker_ychan: Integer;
 
   Gametype: record
     Name: String;
