@@ -431,7 +431,7 @@ implementation
             	StrList.Add(Messages.Values['TopRoles']);
             	for i:=1 to 255 do
               	if TopRole[i].Name<>'' then
-                	StrList.Add(roleText[i, 0]+': [url=/message: '+TopRole[i].Name+']'+TopRole[i].Name+'[/url] - '+IntToStr(TopRole[i].Plays)+' игр');
+                	StrList.Add(roleText[i, 0]+': [url="/message: '+TopRole[i].Name+'"]'+TopRole[i].Name+'[/url] - '+IntToStr(TopRole[i].Plays)+' игр');
           	end;
           	//----------------------------------------------------------------------
           end;
@@ -1510,7 +1510,7 @@ implementation
 
       StrList.Add('');
       StrList.Add('=======Дополнительная информация=======');
-      StrList.Add('Полностью описание и правила игры можно посмотреть [url=/channel:'+help_chan+']здесь[/url]');
+      StrList.Add('Полностью описание и правила игры можно посмотреть [url="/channel:'+help_chan+'"]здесь[/url]');
       PrivateMsg(User.Name, StrList.Text);
       StrList.Free;
       exit;
@@ -2801,7 +2801,7 @@ implementation
           if getPlayerTeam(i)=2 then
             Str:=Str+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
         Str:=Str+'Можете обсуждать свои действия в привате или логове.';
-        Str:=Str+' [url=/channel:'+maf_chan+']Ваше логово[/url]';
+        Str:=Str+' [url="/channel:'+maf_chan+'"]Ваше логово[/url]';
         //--------------------------------------------------------
 
         //-----------------Для яков------------------------------
@@ -2812,7 +2812,7 @@ implementation
             if getPlayerTeam(i)=4 then
               Str1:=Str1+FormatNick(PlayersArr[i]^.Name)+' - [b]'+RoleText[PlayersArr[i]^.gamestate,0]+'[/b]'+Chr(13)+Chr(10);
           	Str1:=Str1+'Можете обсуждать свои действия в привате или логове.';
-          	Str1:=Str1+' [url=/channel:'+y_chan+']Ваше логово[/url]';
+          	Str1:=Str1+' [url="/channel:'+y_chan+'"]Ваше логово[/url]';
         end;
         //--------------------------------------------------------
 

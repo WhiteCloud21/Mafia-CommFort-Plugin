@@ -165,7 +165,7 @@ const
 
   MAX_NAME = 30;
 
-  PLU_VER  = '3.9.0';
+  PLU_VER  = '3.9.1';
 
   PLU_NAME = 'Мафия (игра) '+PLU_VER;
 

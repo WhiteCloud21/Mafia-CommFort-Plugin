@@ -147,7 +147,7 @@ end;
 
 function FormatNick(Name:String): String;
 begin
-  Result:='[url=/message: '+Name+']'+Name+'[/url]';
+  Result:='[url="/message: '+Name+'"]'+Name+'[/url]';
 end;
 
 function GetDllPath: String; stdcall;
