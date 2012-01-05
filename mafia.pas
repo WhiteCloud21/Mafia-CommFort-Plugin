@@ -371,6 +371,8 @@ implementation
   	if not IsCleanupStatsFinished then
     	Exit;
 
+    Text := StringReplace(Text, '[img]', '[ img]', [rfReplaceAll]);
+
     if Channel=game_chan then
     begin
       member.name :=User.Name;
@@ -760,6 +762,8 @@ implementation
   	// Отсутствие реакции на события, если файл статистики еще не очищен
   	if not IsCleanupStatsFinished then
     	Exit;
+
+    Text := StringReplace(Text, '[img=', '[ img=', [rfReplaceAll]);
 
     //------------------------- Индивидуальные настройки -----------------------
     if Text='отстань' then

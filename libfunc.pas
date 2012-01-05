@@ -35,7 +35,15 @@ uses
 
 implementation
   procedure MsgToChannel(Channel, Msg:string);
+  var
+  	fName : String;
   begin
+  	if (Length(Msg) > 11) and (Copy(Msg, 1, 5) = '[img]') and (Copy(Msg, Length(Msg) - 5, 6) = '[/img]') then
+    begin
+    	fName := Copy(Msg, 6, Length(Msg) - 11);
+      PCorePlugin^.AddImageToChannel(BOT_NAME, Channel, fName);
+      Exit;
+    end;
     if msg_send_type<2 then
       PCorePlugin^.AddMessageToChannel(BOT_NAME, Channel,0,msg_format_begin+Msg+msg_format_end)
     else
@@ -48,7 +56,15 @@ implementation
   end;
 
   procedure PrivateMsg(Name, Msg:string);
+  var
+  	fName : String;
   begin
+  	if (Length(Msg) > 11) and (Copy(Msg, 1, 5) = '[img]') and (Copy(Msg, Length(Msg) - 5, 6) = '[/img]') then
+    begin
+    	fName := Copy(Msg, 6, Length(Msg) - 11);
+      PCorePlugin^.AddPrivateImage(BOT_NAME, Name, fName);
+      Exit;
+    end;
     PCorePlugin^.AddPrivateMessage(BOT_NAME, 0,Name,Msg);
   end;
 
